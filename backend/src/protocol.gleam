@@ -1,14 +1,19 @@
-//// Wire protocol shared with the frontend: client <-> server message types and JSON helpers.
+//// Wire protocol shared with the frontend: client <-> server message types and
+//// JSON helpers.
+//// Those message should exist only at the frontier (server.gleam) and should
+//// not navigate in the pipeline.
 
 import chat
 import gleam/dynamic/decode
 import gleam/json
 import gleam/time/timestamp
 
+// Message coming from frontend
 pub type ClientMessage {
   Chat(String)
 }
 
+// Message 
 pub type ServerMessage {
   /// A room broadcast destined for a connected client.
   RoomEvent(chat: chat.Chat)
@@ -62,7 +67,7 @@ fn chat_json(chat: chat.Chat) -> json.Json {
 
   json.object([
     #("content", json.string(chat.content)),
-    #("user", json.object([#("name", json.string(chat.user.name))])),
+    #("user", json.object([#("name", json.string(chat.user.token))])),
     #(
       "timestamp",
       json.object([
