@@ -74,3 +74,23 @@ pub fn adding_a_room_twice_returns_error_and_leaves_original_test() {
       room_registry.GetRoom(reply_to, "alpha")
     })
 }
+
+pub fn registry_returns_real_room_handles_test() {
+  let registry = room_registry.new()
+  let assert Ok(handle) = room.start("lounge")
+
+  let assert Ok(_) =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.AddRoom(reply_to, handle)
+    })
+
+  let assert Ok(room.RoomHandle(id: "lounge", name: "lounge", command: command)) =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.GetRoom(reply_to, "lounge")
+    })
+
+  // Use the returned handle to prove it is live.
+  let inbox = process.new_subject()
+  let assert Ok(_) =
+    actor.call(command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
+}

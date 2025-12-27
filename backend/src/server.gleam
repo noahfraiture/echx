@@ -1,5 +1,4 @@
 import client
-import client_message
 import gleam/bytes_tree
 import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
@@ -9,6 +8,7 @@ import gleam/option.{None}
 import gleam/string
 import logging
 import mist.{type ResponseData}
+import protocol
 import room_registry
 
 pub fn new(registry: Subject(room_registry.RoomRegistryMsg)) {
@@ -52,19 +52,27 @@ fn handle_ws_message(state, message, conn) {
       let assert Ok(_) = mist.send_text_frame(conn, "pong")
       mist.continue(state)
     }
+    mist.Text(payload) -> handle_text_message(state, payload, conn)
     mist.Closed | mist.Shutdown -> mist.stop()
-    mist.Custom(msg) -> handle_message(state, msg, conn)
+    mist.Custom(msg) -> handle_client_message(state, msg, conn)
     _ -> mist.continue(state)
   }
 }
 
-fn handle_message(
+fn handle_text_message(state, payload: String, conn) {
+  case protocol.decode_client_message(payload) {
+    Ok(msg) -> handle_client_message(state, msg, conn)
+    Error(_) -> mist.continue(state)
+  }
+}
+
+fn handle_client_message(
   state: Connection,
-  msg: client_message.ClientMessage,
+  msg: protocol.ClientMessage,
   conn: mist.WebsocketConnection,
 ) {
   case msg {
-    client_message.Chat(_) -> {
+    protocol.Chat(_) -> {
       let assert Ok(_) = mist.send_text_frame(conn, "hello")
       mist.continue(state)
     }
