@@ -5,6 +5,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/io
+import gleam/list
 import gleam/option.{None}
 import gleam/otp/actor
 import gleam/string
@@ -29,7 +30,6 @@ pub fn new(
         ["ws"] ->
           mist.websocket(
             request: req,
-            // TODO : on init, create a random token and save in the cache
             on_init: fn(_conn) {
               #(client.Client(registry, chat.Unknown), None)
             },
@@ -48,7 +48,7 @@ pub fn new(
     |> mist.new
     |> mist.bind("localhost")
     |> mist.with_ipv6
-    |> mist.port(0)
+    |> mist.port(8080)
     |> mist.start
 }
 
@@ -68,7 +68,6 @@ fn handler(
       }
       mist.Text(payload) -> handle_text_message(entry, state, payload, conn)
       mist.Closed | mist.Shutdown -> mist.stop()
-      mist.Custom(msg) -> handle_client_message(entry, state, msg, conn)
       _ -> mist.continue(state)
     }
   }
@@ -80,35 +79,56 @@ fn handle_text_message(
   payload: String,
   conn: mist.WebsocketConnection,
 ) -> mist.Next(client.Client, a) {
-  case protocol.decode_client_message(payload) {
-    Ok(msg) -> handle_client_message(entry, state, msg, conn)
+  case protocol.decode_client_messages(payload) {
+    Ok(msgs) -> mist.continue(handle_client_messages(entry, state, msgs, conn))
     Error(_) -> mist.continue(state)
   }
 }
 
-fn handle_client_message(
+// TODO : handle error
+//  maybe fail fast and stop connection on error ?
+fn handle_client_messages(
   entry: Subject(pipeline.Message),
   state: client.Client,
-  msg: protocol.ClientMessage,
+  msgs: List(protocol.ClientMessage),
   conn: mist.WebsocketConnection,
-) {
-  // TODO : handle error
-  let _ = case msg {
+) -> client.Client {
+  use state, msg <- list.fold(msgs, state)
+  case msg {
     protocol.Chat(content) -> {
-      echo "chat incoming: " <> content
-      actor.send(
-        entry,
-        pipeline.Chat(chat.Chat(
-          content:,
-          user: state.user,
-          timestamp: timestamp.system_time(),
-        )),
-      )
-      let assert Ok(_) = mist.send_text_frame(conn, "hello")
-      mist.continue(state)
+      case content {
+        "ping" -> {
+          let assert Ok(_) = mist.send_text_frame(conn, "pong")
+          state
+        }
+        "profile" -> {
+          let _ = case state.user {
+            chat.Unknown ->
+              mist.send_text_frame(
+                conn,
+                protocol.encode_server_message(protocol.Error("user not found")),
+              )
+            chat.User(token:, name:) ->
+              mist.send_text_frame(conn, token <> name)
+          }
+          state
+        }
+        _ -> {
+          actor.send(
+            entry,
+            pipeline.Chat(chat.Chat(
+              content:,
+              user: state.user,
+              timestamp: timestamp.system_time(),
+            )),
+          )
+          state
+        }
+      }
+      state
     }
     protocol.Connect(token:, name:) -> {
-      mist.continue(client.Client(..state, user: chat.User(token:, name:)))
+      client.Client(..state, user: chat.User(token:, name:))
     }
   }
 }

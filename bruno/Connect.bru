@@ -1,0 +1,23 @@
+meta {
+  name: Connect
+  type: ws
+  seq: 4
+}
+
+ws {
+  url: ws://{{host}}/ws
+  body: ws
+  auth: none
+}
+
+body:ws {
+  name: message 1
+  type: json
+  content: '''
+    {
+      "type": "connect",
+      "token": "123",
+      "name": "noah"
+    }
+  '''
+}

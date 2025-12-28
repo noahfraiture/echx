@@ -47,6 +47,19 @@ pub fn decode_client_message(
   json.parse(payload, client_message_decoder())
 }
 
+pub fn decode_client_messages(
+  payload: String,
+) -> Result(List(ClientMessage), json.DecodeError) {
+  json.parse(payload, client_messages_decoder())
+}
+
+fn client_messages_decoder() -> decode.Decoder(List(ClientMessage)) {
+  decode.one_of(
+    decode.list(client_message_decoder()),
+    or: [client_message_decoder() |> decode.map(fn(msg) { [msg] })],
+  )
+}
+
 fn client_message_decoder() -> decode.Decoder(ClientMessage) {
   {
     use kind <- decode.field("type", decode.string)

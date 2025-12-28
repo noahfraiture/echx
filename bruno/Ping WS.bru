@@ -1,0 +1,22 @@
+meta {
+  name: Ping WS
+  type: ws
+  seq: 1
+}
+
+ws {
+  url: ws://{{host}}/ws
+  body: ws
+  auth: none
+}
+
+body:ws {
+  name: message 1
+  type: json
+  content: '''
+    {
+      "type": "chat",
+      "message": "ping"
+    }
+  '''
+}
