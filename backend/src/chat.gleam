@@ -1,7 +1,8 @@
 import gleam/time/timestamp
 
 pub type User {
-  User(token: String)
+  User(token: String, name: String)
+  Unknown
 }
 
 pub type Chat {

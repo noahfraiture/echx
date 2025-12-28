@@ -8,16 +8,30 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/time/timestamp
 
-// Message coming from frontend
+/// Message coming from frontend.
+/// JSON must be an object with a string "type" field.
+/// Missing fields or wrong types fail decoding; empty strings are accepted.
 pub type ClientMessage {
-  Chat(String)
+  /// "chat" payload:
+  /// - required: "message" (string)
+  Chat(message: String)
+  /// "connect" payload:
+  /// - required: "token" (string), "name" (string)
+  Connect(token: String, name: String)
 }
 
-// Message 
+/// Message sent to the frontend.
+/// Encoding always emits an object with a string "type" field.
+/// Clients should treat missing fields or wrong types as invalid.
 pub type ServerMessage {
-  /// A room broadcast destined for a connected client.
+  /// "room_event" payload:
+  /// - required: "chat.content" (string)
+  /// - required: "chat.user.name" (string) or null when user is Unknown
+  /// - required: "chat.timestamp.seconds" (int), "chat.timestamp.nanoseconds" (int)
+  /// - never encoded: user token
   RoomEvent(chat: chat.Chat)
-  /// A user-visible error to forward over the socket.
+  /// "error" payload:
+  /// - required: "message" (string)
   Error(message: String)
 }
 
@@ -40,6 +54,11 @@ fn client_message_decoder() -> decode.Decoder(ClientMessage) {
       "chat" -> {
         use message <- decode.field("message", decode.string)
         decode.success(Chat(message))
+      }
+      "connect" -> {
+        use token <- decode.field("token", decode.string)
+        use name <- decode.field("name", decode.string)
+        decode.success(Connect(token:, name:))
       }
       _ -> decode.failure(Chat(""), expected: "client message")
     }
@@ -67,7 +86,15 @@ fn chat_json(chat: chat.Chat) -> json.Json {
 
   json.object([
     #("content", json.string(chat.content)),
-    #("user", json.object([#("name", json.string(chat.user.token))])),
+    #(
+      "user",
+      json.object([
+        #("name", case chat.user {
+          chat.Unknown -> json.null()
+          chat.User(token: _, name:) -> json.string(name)
+        }),
+      ]),
+    ),
     #(
       "timestamp",
       json.object([

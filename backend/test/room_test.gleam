@@ -6,7 +6,11 @@ import protocol
 import room
 
 fn sample_chat(content: String) -> chat.Chat {
-  chat.Chat(content, chat.User("user"), timestamp.from_unix_seconds(0))
+  chat.Chat(
+    content,
+    chat.User(token: "user-token", name: "user"),
+    timestamp.from_unix_seconds(0),
+  )
 }
 
 pub fn join_deduplicates_members_test() {

@@ -4,7 +4,11 @@ import gleam/time/timestamp
 import pipeline
 
 fn sample_chat(content: String) -> chat.Chat {
-  chat.Chat(content, chat.User("tester"), timestamp.from_unix_seconds(0))
+  chat.Chat(
+    content,
+    chat.User(name: "tester", token: "123"),
+    timestamp.from_unix_seconds(0),
+  )
 }
 
 pub fn processing_subscribes_to_upstream_on_start_test() {
@@ -18,7 +22,8 @@ pub fn processing_subscribes_to_upstream_on_start_test() {
 pub fn processing_subscribes_to_multiple_upstreams_on_start_test() {
   let upstream_a = process.new_subject()
   let upstream_b = process.new_subject()
-  let assert Ok(_processing) = pipeline.start_processing([upstream_a, upstream_b])
+  let assert Ok(_processing) =
+    pipeline.start_processing([upstream_a, upstream_b])
 
   let assert Ok(pipeline.Subscribe(from: _)) =
     process.receive(upstream_a, within: 50)

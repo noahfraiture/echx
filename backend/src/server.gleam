@@ -31,7 +31,7 @@ pub fn new(
             request: req,
             // TODO : on init, create a random token and save in the cache
             on_init: fn(_conn) {
-              #(Connection(client.new(registry, chat.User("new user"))), None)
+              #(client.Client(registry, chat.Unknown), None)
             },
             on_close: fn(_state) { io.println("goodbye!") },
             handler: handler(entry),
@@ -52,18 +52,14 @@ pub fn new(
     |> mist.start
 }
 
-type Connection {
-  Connection(client: client.Client)
-}
-
 fn handler(
   entry: Subject(pipeline.Message),
 ) -> fn(
-  Connection,
+  client.Client,
   mist.WebsocketMessage(protocol.ClientMessage),
   mist.WebsocketConnection,
 ) ->
-  mist.Next(Connection, a) {
+  mist.Next(client.Client, a) {
   fn(state, message, conn) {
     case message {
       mist.Text("ping") -> {
@@ -80,10 +76,10 @@ fn handler(
 
 fn handle_text_message(
   entry: Subject(pipeline.Message),
-  state: Connection,
+  state: client.Client,
   payload: String,
   conn: mist.WebsocketConnection,
-) -> mist.Next(Connection, a) {
+) -> mist.Next(client.Client, a) {
   case protocol.decode_client_message(payload) {
     Ok(msg) -> handle_client_message(entry, state, msg, conn)
     Error(_) -> mist.continue(state)
@@ -92,23 +88,27 @@ fn handle_text_message(
 
 fn handle_client_message(
   entry: Subject(pipeline.Message),
-  state: Connection,
+  state: client.Client,
   msg: protocol.ClientMessage,
   conn: mist.WebsocketConnection,
 ) {
   // TODO : handle error
   let _ = case msg {
     protocol.Chat(content) -> {
+      echo "chat incoming: " <> content
       actor.send(
         entry,
         pipeline.Chat(chat.Chat(
           content:,
-          user: state.client.user,
+          user: state.user,
           timestamp: timestamp.system_time(),
         )),
       )
       let assert Ok(_) = mist.send_text_frame(conn, "hello")
+      mist.continue(state)
+    }
+    protocol.Connect(token:, name:) -> {
+      mist.continue(client.Client(..state, user: chat.User(token:, name:)))
     }
   }
-  mist.continue(state)
 }
