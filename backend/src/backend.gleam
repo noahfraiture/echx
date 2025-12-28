@@ -2,7 +2,7 @@ import gleam/erlang/process
 import logging
 import pipeline
 import room_registry
-import server
+import transport/server
 
 pub fn main() {
   logging.configure()

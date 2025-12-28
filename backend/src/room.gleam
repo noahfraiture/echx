@@ -3,7 +3,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
 import gleam/result
 import gleam/set
-import protocol
+import transport/outgoing
 
 pub type RoomID =
   String
@@ -20,7 +20,7 @@ pub type JoinResult =
   Result(Nil, Nil)
 
 pub type RoomCommand {
-  Join(reply_to: Subject(JoinResult), inbox: Subject(protocol.ServerMessage))
+  Join(reply_to: Subject(JoinResult), inbox: Subject(outgoing.OutgoingMessage))
   Publish(chat: chat.Chat)
 }
 
@@ -38,7 +38,7 @@ type Room {
     name: String,
     id: String,
     msg: List(chat.Chat),
-    clients: set.Set(Subject(protocol.ServerMessage)),
+    clients: set.Set(Subject(outgoing.OutgoingMessage)),
   )
 }
 
@@ -62,7 +62,7 @@ fn handle_request(
 fn broadcast(state: Room, message: chat.Chat) {
   let Room(clients:, ..) = state
   clients
-  |> set.each(fn(c: Subject(protocol.ServerMessage)) {
-    actor.send(c, protocol.RoomEvent(message))
+  |> set.each(fn(c: Subject(outgoing.OutgoingMessage)) {
+    actor.send(c, outgoing.RoomEvent(message))
   })
 }

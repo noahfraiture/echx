@@ -13,8 +13,9 @@ import gleam/time/timestamp
 import logging
 import mist.{type ResponseData}
 import pipeline
-import protocol
 import room_registry
+import transport/incoming
+import transport/outgoing
 
 pub fn new(
   registry: Subject(room_registry.RoomRegistryMsg),
@@ -56,7 +57,7 @@ fn handler(
   entry: Subject(pipeline.Message),
 ) -> fn(
   client.Client,
-  mist.WebsocketMessage(protocol.ClientMessage),
+  mist.WebsocketMessage(incoming.IncomingMessage),
   mist.WebsocketConnection,
 ) ->
   mist.Next(client.Client, a) {
@@ -79,7 +80,7 @@ fn handle_text_message(
   payload: String,
   conn: mist.WebsocketConnection,
 ) -> mist.Next(client.Client, a) {
-  case protocol.decode_client_messages(payload) {
+  case incoming.decode_client_messages(payload) {
     Ok(msgs) -> mist.continue(handle_client_messages(entry, state, msgs, conn))
     Error(_) -> mist.continue(state)
   }
@@ -90,23 +91,25 @@ fn handle_text_message(
 fn handle_client_messages(
   entry: Subject(pipeline.Message),
   state: client.Client,
-  msgs: List(protocol.ClientMessage),
+  msgs: List(incoming.IncomingMessage),
   conn: mist.WebsocketConnection,
 ) -> client.Client {
   use state, msg <- list.fold(msgs, state)
   case msg {
-    protocol.Chat(content) -> {
+    incoming.Chat(content) -> {
       case content {
         "ping" -> {
           let assert Ok(_) = mist.send_text_frame(conn, "pong")
           state
         }
+        // Debug
+        // will be removed in future
         "profile" -> {
           let _ = case state.user {
             chat.Unknown ->
               mist.send_text_frame(
                 conn,
-                protocol.encode_server_message(protocol.Error("user not found")),
+                outgoing.encode_server_message(outgoing.Error("user not found")),
               )
             chat.User(token:, name:) ->
               mist.send_text_frame(conn, token <> name)
@@ -127,7 +130,7 @@ fn handle_client_messages(
       }
       state
     }
-    protocol.Connect(token:, name:) -> {
+    incoming.Connect(token:, name:) -> {
       client.Client(..state, user: chat.User(token:, name:))
     }
   }

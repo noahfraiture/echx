@@ -1,6 +1,7 @@
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/list
+import gleam/option.{type Option}
 import gleam/otp/actor
 import room
 
@@ -10,10 +11,10 @@ type RoomRegistry {
 }
 
 type ListRoomsResult =
-  Result(List(room.RoomSummary), Nil)
+  List(room.RoomSummary)
 
 type GetRoomResult =
-  Result(room.RoomHandle, Nil)
+  Option(room.RoomHandle)
 
 type AddRoomResult =
   Result(Nil, Nil)
@@ -36,11 +37,11 @@ fn handle(
         |> list.map(fn(handle: room.RoomHandle) {
           room.RoomSummary(id: handle.id, name: handle.name)
         })
-      actor.send(reply_to, Ok(summaries))
+      actor.send(reply_to, summaries)
       actor.continue(state)
     }
     GetRoom(reply_to:, id:) -> {
-      actor.send(reply_to, dict.get(rooms, id))
+      actor.send(reply_to, option.from_result(dict.get(rooms, id)))
       actor.continue(state)
     }
     AddRoom(reply_to:, room:) -> {

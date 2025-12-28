@@ -14,9 +14,16 @@ body:ws {
   name: message 1
   type: json
   content: '''
-    {
-      "type": "chat",
-      "message": "profile"
-    }
+    [
+      {
+        "type": "connect",
+        "token": "123",
+        "name": "noah"
+      },
+      {
+        "type": "chat",
+        "message": "profile"
+      }
+    ]
   '''
 }

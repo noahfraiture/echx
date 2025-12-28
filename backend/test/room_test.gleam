@@ -2,7 +2,7 @@ import chat
 import gleam/erlang/process
 import gleam/otp/actor
 import gleam/time/timestamp
-import protocol
+import transport/outgoing
 import room
 
 fn sample_chat(content: String) -> chat.Chat {
@@ -27,12 +27,12 @@ pub fn join_deduplicates_members_test() {
 
   actor.send(handle.command, room.Publish(sample_chat("hello")))
 
-  let assert Ok(protocol.RoomEvent(chat: first)) =
+  let assert Ok(outgoing.RoomEvent(chat: first)) =
     process.receive(inbox, within: 50)
   assert first.content == "hello"
   assert Error(Nil) == process.receive(inbox, within: 20)
 
-  let assert Ok(protocol.RoomEvent(chat: second)) =
+  let assert Ok(outgoing.RoomEvent(chat: second)) =
     process.receive(other, within: 50)
   assert second.content == "hello"
 }
@@ -49,9 +49,9 @@ pub fn publish_sends_to_all_members_test() {
 
   actor.send(handle.command, room.Publish(sample_chat("hi all")))
 
-  let assert Ok(protocol.RoomEvent(chat: alice_msg)) =
+  let assert Ok(outgoing.RoomEvent(chat: alice_msg)) =
     process.receive(alice, within: 50)
-  let assert Ok(protocol.RoomEvent(chat: bob_msg)) =
+  let assert Ok(outgoing.RoomEvent(chat: bob_msg)) =
     process.receive(bob, within: 50)
 
   assert alice_msg.content == "hi all"
