@@ -4,25 +4,17 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/otp/actor
 import room
+import transport/outgoing
 
 /// Hub where rooms are registered
 type RoomRegistry {
   RoomRegistry(rooms: Dict(String, room.RoomHandle))
 }
 
-type ListRoomsResult =
-  List(room.RoomSummary)
-
-type GetRoomResult =
-  Option(room.RoomHandle)
-
-type AddRoomResult =
-  Result(Nil, Nil)
-
 pub type RoomRegistryMsg {
-  ListRooms(reply_to: Subject(ListRoomsResult))
-  GetRoom(reply_to: Subject(GetRoomResult), id: room.RoomID)
-  AddRoom(reply_to: Subject(AddRoomResult), room: room.RoomHandle)
+  ListRooms(reply_to: Subject(List(outgoing.RoomSummary)))
+  GetRoom(reply_to: Subject(Option(room.RoomHandle)), id: String)
+  AddRoom(reply_to: Subject(Result(Nil, Nil)), room: room.RoomHandle)
 }
 
 fn handle(
@@ -35,7 +27,7 @@ fn handle(
       let summaries =
         dict.values(rooms)
         |> list.map(fn(handle: room.RoomHandle) {
-          room.RoomSummary(id: handle.id, name: handle.name)
+          outgoing.RoomSummary(id: handle.id, name: handle.name)
         })
       actor.send(reply_to, summaries)
       actor.continue(state)

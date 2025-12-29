@@ -5,15 +5,8 @@ import gleam/result
 import gleam/set
 import transport/outgoing
 
-pub type RoomID =
-  String
-
-pub type RoomSummary {
-  RoomSummary(id: RoomID, name: String)
-}
-
 pub type RoomHandle {
-  RoomHandle(id: RoomID, name: String, command: Subject(RoomCommand))
+  RoomHandle(id: String, name: String, command: Subject(RoomCommand))
 }
 
 pub type JoinResult =

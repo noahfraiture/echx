@@ -5,17 +5,14 @@ import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/io
-import gleam/list
 import gleam/option.{None}
-import gleam/otp/actor
 import gleam/string
-import gleam/time/timestamp
 import logging
 import mist.{type ResponseData}
 import pipeline
 import room_registry
-import transport/incoming
-import transport/outgoing
+import transport/rest
+import transport/websocket
 
 pub fn new(
   registry: Subject(room_registry.RoomRegistryMsg),
@@ -35,11 +32,20 @@ pub fn new(
               #(client.Client(registry, chat.Unknown), None)
             },
             on_close: fn(_state) { io.println("goodbye!") },
-            handler: handler(entry),
+            handler: websocket.handler(entry),
           )
         ["ping"] ->
           response.new(200)
           |> response.set_body(mist.Bytes(bytes_tree.from_string("pong")))
+
+        ["api", "public", ..] -> {
+          todo
+        }
+
+        ["api", ..path] -> {
+          use ctx <- rest.authenticate(rest.new_context(registry), req)
+          rest.handle(ctx, path)
+        }
 
         _ ->
           response.new(404)
@@ -51,87 +57,4 @@ pub fn new(
     |> mist.with_ipv6
     |> mist.port(8080)
     |> mist.start
-}
-
-fn handler(
-  entry: Subject(pipeline.Message),
-) -> fn(
-  client.Client,
-  mist.WebsocketMessage(incoming.IncomingMessage),
-  mist.WebsocketConnection,
-) ->
-  mist.Next(client.Client, a) {
-  fn(state, message, conn) {
-    case message {
-      mist.Text("ping") -> {
-        let assert Ok(_) = mist.send_text_frame(conn, "pong")
-        mist.continue(state)
-      }
-      mist.Text(payload) -> handle_text_message(entry, state, payload, conn)
-      mist.Closed | mist.Shutdown -> mist.stop()
-      _ -> mist.continue(state)
-    }
-  }
-}
-
-fn handle_text_message(
-  entry: Subject(pipeline.Message),
-  state: client.Client,
-  payload: String,
-  conn: mist.WebsocketConnection,
-) -> mist.Next(client.Client, a) {
-  case incoming.decode_client_messages(payload) {
-    Ok(msgs) -> mist.continue(handle_client_messages(entry, state, msgs, conn))
-    Error(_) -> mist.continue(state)
-  }
-}
-
-// TODO : handle error
-//  maybe fail fast and stop connection on error ?
-fn handle_client_messages(
-  entry: Subject(pipeline.Message),
-  state: client.Client,
-  msgs: List(incoming.IncomingMessage),
-  conn: mist.WebsocketConnection,
-) -> client.Client {
-  use state, msg <- list.fold(msgs, state)
-  case msg {
-    incoming.Chat(content) -> {
-      case content {
-        "ping" -> {
-          let assert Ok(_) = mist.send_text_frame(conn, "pong")
-          state
-        }
-        // Debug
-        // will be removed in future
-        "profile" -> {
-          let _ = case state.user {
-            chat.Unknown ->
-              mist.send_text_frame(
-                conn,
-                outgoing.encode_server_message(outgoing.Error("user not found")),
-              )
-            chat.User(token:, name:) ->
-              mist.send_text_frame(conn, token <> name)
-          }
-          state
-        }
-        _ -> {
-          actor.send(
-            entry,
-            pipeline.Chat(chat.Chat(
-              content:,
-              user: state.user,
-              timestamp: timestamp.system_time(),
-            )),
-          )
-          state
-        }
-      }
-      state
-    }
-    incoming.Connect(token:, name:) -> {
-      client.Client(..state, user: chat.User(token:, name:))
-    }
-  }
 }

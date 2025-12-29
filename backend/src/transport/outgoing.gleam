@@ -1,5 +1,7 @@
 //// This message should exist only at the frontier (server.gleam) and should
 //// not navigate in the pipeline.
+//// This is the domain of outgoing message. It can imported and used by
+//// internal packaages.
 
 import chat
 import gleam/json
@@ -18,6 +20,12 @@ pub type OutgoingMessage {
   /// "error" payload:
   /// - required: "message" (string)
   Error(message: String)
+
+  ListRooms(rooms: List(RoomSummary))
+}
+
+pub type RoomSummary {
+  RoomSummary(id: String, name: String)
 }
 
 pub fn encode_server_message(message: OutgoingMessage) -> String {
@@ -32,6 +40,19 @@ fn server_message_json(message: OutgoingMessage) -> json.Json {
       json.object([
         #("type", json.string("room_event")),
         #("chat", chat_json(chat)),
+      ])
+    ListRooms(rooms:) ->
+      json.object([
+        #("type", json.string("list_rooms")),
+        #(
+          "rooms",
+          json.array(rooms, fn(room: RoomSummary) -> json.Json {
+            json.object([
+              #("id", json.string(room.id)),
+              #("name", json.string(room.name)),
+            ])
+          }),
+        ),
       ])
     Error(message) ->
       json.object([
