@@ -28,8 +28,8 @@ pub fn new(
         ["ws"] ->
           mist.websocket(
             request: req,
-            on_init: fn(_conn) {
-              #(client.Client(registry, chat.Unknown), None)
+            on_init: fn(conn) {
+              #(client.Client(registry, chat.Unknown, websocket.start_inbox(conn)), None)
             },
             on_close: fn(_state) { io.println("goodbye!") },
             handler: websocket.handler(entry),

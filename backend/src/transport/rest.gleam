@@ -4,11 +4,9 @@ import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/option.{type Option, None, Some}
-import gleam/otp/actor
 import gleam/result
 import mist
 import room_registry
-import transport/outgoing
 
 pub fn handle(ctx: Context, path: List(String)) -> Response(mist.ResponseData) {
   case path {
@@ -25,16 +23,6 @@ fn handle_room(ctx: Context, cmd: String) -> Response(mist.ResponseData) {
     // internal
     Some(registry) -> {
       case cmd {
-        "list" -> {
-          let rooms = actor.call(registry, 1000, room_registry.ListRooms)
-          response.new(200)
-          |> response.set_body(mist.Bytes(
-            rooms
-            |> outgoing.ListRooms
-            |> outgoing.encode_server_message
-            |> bytes_tree.from_string,
-          ))
-        }
         "join" -> {
           todo
         }
@@ -53,8 +41,10 @@ pub opaque type Context {
   )
 }
 
-pub fn new_context() -> Context {
-  Context(None, None)
+pub fn new_context(
+  registry: Subject(room_registry.RoomRegistryMsg),
+) -> Context {
+  Context(Some(registry), None)
 }
 
 pub fn authenticate(

@@ -19,9 +19,13 @@ pub type OutgoingMessage {
   RoomEvent(chat: chat.Chat)
   /// "error" payload:
   /// - required: "message" (string)
-  Error(message: String)
+  ErrorMsg(message: String)
 
   ListRooms(rooms: List(RoomSummary))
+  /// "join_room" payload:
+  /// - required: "status" ("ok" or "error")
+  /// - required when error: "reason" (string)
+  JoinRoom(result: Result(Nil, String))
 }
 
 pub type RoomSummary {
@@ -54,7 +58,21 @@ fn server_message_json(message: OutgoingMessage) -> json.Json {
           }),
         ),
       ])
-    Error(message) ->
+    JoinRoom(result) ->
+      case result {
+        Ok(_) ->
+          json.object([
+            #("type", json.string("join_room")),
+            #("status", json.string("ok")),
+          ])
+        Error(reason) ->
+          json.object([
+            #("type", json.string("join_room")),
+            #("status", json.string("error")),
+            #("reason", json.string(reason)),
+          ])
+      }
+    ErrorMsg(message) ->
       json.object([
         #("type", json.string("error")),
         #("message", json.string(message)),

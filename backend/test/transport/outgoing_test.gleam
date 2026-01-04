@@ -95,7 +95,7 @@ pub fn encode_server_error_test() {
       })
     })
 
-  let encoded = outgoing.encode_server_message(outgoing.Error("boom"))
+  let encoded = outgoing.encode_server_message(outgoing.ErrorMsg("boom"))
 
   let assert Ok(#("error", "boom")) = json.parse(encoded, decoder)
 }

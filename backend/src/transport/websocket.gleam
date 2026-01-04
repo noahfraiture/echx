@@ -2,12 +2,31 @@ import chat
 import client
 import gleam/erlang/process.{type Subject}
 import gleam/list
+import gleam/option
 import gleam/otp/actor
 import gleam/time/timestamp
 import mist
 import pipeline
+import room
+import room_registry
 import transport/incoming
 import transport/outgoing
+
+pub fn start_inbox(
+  conn: mist.WebsocketConnection,
+) -> Subject(outgoing.OutgoingMessage) {
+  let assert Ok(actor.Started(_, inbox)) =
+    actor.new(conn)
+    |> actor.on_message(
+      fn(conn: mist.WebsocketConnection, msg: outgoing.OutgoingMessage) {
+        let _ = mist.send_text_frame(conn, outgoing.encode_server_message(msg))
+        actor.continue(conn)
+      },
+    )
+    |> actor.start
+
+  inbox
+}
 
 pub fn handler(
   entry: Subject(pipeline.Message),
@@ -54,6 +73,8 @@ fn handle_client_messages(
   case msg {
     incoming.Chat(content) -> {
       case content {
+        // Debug
+        // will be removed in future
         "ping" -> {
           let assert Ok(_) = mist.send_text_frame(conn, "pong")
           state
@@ -65,7 +86,9 @@ fn handle_client_messages(
             chat.Unknown ->
               mist.send_text_frame(
                 conn,
-                outgoing.encode_server_message(outgoing.Error("user not found")),
+                outgoing.encode_server_message(outgoing.ErrorMsg(
+                  "user not found",
+                )),
               )
             chat.User(token:, name:) ->
               mist.send_text_frame(conn, token <> name)
@@ -88,6 +111,48 @@ fn handle_client_messages(
     }
     incoming.Connect(token:, name:) -> {
       client.Client(..state, user: chat.User(token:, name:))
+    }
+    incoming.ListRooms -> {
+      let rooms = actor.call(state.registry, 1000, room_registry.ListRooms)
+      let _ =
+        mist.send_text_frame(
+          conn,
+          outgoing.encode_server_message(outgoing.ListRooms(rooms)),
+        )
+      state
+    }
+    incoming.JoinRoom(room_id) -> {
+      let result = join_room(state, room_id)
+      let _ =
+        mist.send_text_frame(
+          conn,
+          outgoing.encode_server_message(outgoing.JoinRoom(result)),
+        )
+      state
+    }
+  }
+}
+
+fn join_room(state: client.Client, room_id: String) -> Result(Nil, String) {
+  case state.user {
+    chat.Unknown -> Error("unauthenticated")
+    chat.User(_, _) -> {
+      let existing =
+        actor.call(state.registry, 1000, fn(reply_to) {
+          room_registry.GetRoom(reply_to, room_id)
+        })
+
+      case existing {
+        option.None -> Error("room not found")
+        option.Some(room_handle) -> {
+          let join_result =
+            actor.call(room_handle.command, 1000, room.Join(_, state.inbox))
+          case join_result {
+            Ok(_) -> Ok(Nil)
+            Error(_) -> Error("join rejected")
+          }
+        }
+      }
     }
   }
 }

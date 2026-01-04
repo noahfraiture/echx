@@ -14,6 +14,12 @@ pub type IncomingMessage {
   /// "connect" payload:
   /// - required: "token" (string), "name" (string)
   Connect(token: String, name: String)
+  /// "list_rooms" payload:
+  /// - no fields
+  ListRooms
+  /// "join_room" payload:
+  /// - required: "room_id" (string)
+  JoinRoom(room_id: String)
 }
 
 pub fn decode_client_messages(
@@ -40,6 +46,11 @@ fn client_message_decoder() -> decode.Decoder(IncomingMessage) {
         use token <- decode.field("token", decode.string)
         use name <- decode.field("name", decode.string)
         decode.success(Connect(token:, name:))
+      }
+      "list_rooms" -> decode.success(ListRooms)
+      "join_room" -> {
+        use room_id <- decode.field("room_id", decode.string)
+        decode.success(JoinRoom(room_id))
       }
       _ -> decode.failure(Chat(""), expected: "client message")
     }
