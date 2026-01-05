@@ -1,4 +1,5 @@
-import chat
+import domain/chat
+import domain/response
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{None}
@@ -26,7 +27,7 @@ pub fn encode_server_room_event_test() {
     })
 
   let encoded =
-    outgoing.encode_server_message(outgoing.RoomEvent(sample_chat("hey")))
+    outgoing.encode_server_message(response.RoomEvent(sample_chat("hey")))
 
   let assert Ok(#("room_event", #("hey", "Neo"))) = json.parse(encoded, decoder)
 }
@@ -36,7 +37,7 @@ pub fn encode_server_room_event_unknown_user_test() {
     decode.at(["chat", "user", "name"], decode.optional(decode.string))
   let encoded =
     outgoing.encode_server_message(
-      outgoing.RoomEvent(chat.Chat(
+      response.RoomEvent(chat.Chat(
         "hey",
         chat.Unknown,
         timestamp.from_unix_seconds(2),
@@ -56,7 +57,7 @@ pub fn encode_server_room_event_timestamp_fields_test() {
 
   let encoded =
     outgoing.encode_server_message(
-      outgoing.RoomEvent(chat.Chat(
+      response.RoomEvent(chat.Chat(
         "time",
         chat.User("token-1", "Neo"),
         timestamp.from_unix_seconds(42),
@@ -77,7 +78,7 @@ pub fn encode_server_room_event_includes_user_name_only_test() {
 
   let encoded =
     outgoing.encode_server_message(
-      outgoing.RoomEvent(chat.Chat(
+      response.RoomEvent(chat.Chat(
         "hello",
         chat.User("secret-token", "Neo"),
         timestamp.from_unix_seconds(1),
@@ -95,7 +96,7 @@ pub fn encode_server_error_test() {
       })
     })
 
-  let encoded = outgoing.encode_server_message(outgoing.ErrorMsg("boom"))
+  let encoded = outgoing.encode_server_message(response.ErrorMsg("boom"))
 
   let assert Ok(#("error", "boom")) = json.parse(encoded, decoder)
 }
@@ -120,9 +121,9 @@ pub fn encode_server_list_rooms_test() {
 
   let encoded =
     outgoing.encode_server_message(
-      outgoing.ListRooms([
-        outgoing.RoomSummary(id: "lobby", name: "Lobby", joined: True),
-        outgoing.RoomSummary(id: "games", name: "Games", joined: False),
+      response.ListRooms([
+        response.RoomSummary(id: "lobby", name: "Lobby", joined: True),
+        response.RoomSummary(id: "games", name: "Games", joined: False),
       ]),
     )
 
@@ -144,7 +145,7 @@ pub fn encode_server_join_room_ok_test() {
     })
 
   let encoded =
-    outgoing.encode_server_message(outgoing.JoinRoom(Ok(Nil)))
+    outgoing.encode_server_message(response.JoinRoom(Ok(Nil)))
 
   let assert Ok(#("join_room", #("ok", None))) = json.parse(encoded, decoder)
 }
@@ -161,7 +162,7 @@ pub fn encode_server_join_room_error_test() {
 
   let encoded =
     outgoing.encode_server_message(
-      outgoing.JoinRoom(Error("room not found")),
+      response.JoinRoom(Error("room not found")),
     )
 
   let assert Ok(#("join_room", #("error", "room not found"))) =

@@ -1,4 +1,4 @@
-import chat
+import domain/chat
 import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/otp/actor

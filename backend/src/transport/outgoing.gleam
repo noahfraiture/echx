@@ -1,56 +1,29 @@
-//// This message should exist only at the frontier (server.gleam) and should
-//// not navigate in the pipeline.
-//// This is the domain of outgoing message. It can imported and used by
-//// internal packaages.
+//// Wire encoding only.
 
-import chat
+import domain/chat
+import domain/response
 import gleam/json
 import gleam/time/timestamp
 
-/// Message sent to the frontend.
-/// Encoding always emits an object with a string "type" field.
-/// Clients should treat missing fields or wrong types as invalid.
-pub type OutgoingMessage {
-  /// "room_event" payload:
-  /// - required: "chat.content" (string)
-  /// - required: "chat.user.name" (string) or null when user is Unknown
-  /// - required: "chat.timestamp.seconds" (int), "chat.timestamp.nanoseconds" (int)
-  /// - never encoded: user token
-  RoomEvent(chat: chat.Chat)
-  /// "error" payload:
-  /// - required: "message" (string)
-  ErrorMsg(message: String)
-
-  ListRooms(rooms: List(RoomSummary))
-  /// "join_room" payload:
-  /// - required: "status" ("ok" or "error")
-  /// - required when error: "reason" (string)
-  JoinRoom(result: Result(Nil, String))
-}
-
-pub type RoomSummary {
-  RoomSummary(id: String, name: String, joined: Bool)
-}
-
-pub fn encode_server_message(message: OutgoingMessage) -> String {
+pub fn encode_server_message(message: response.Response) -> String {
   message
   |> server_message_json
   |> json.to_string
 }
 
-fn server_message_json(message: OutgoingMessage) -> json.Json {
+fn server_message_json(message: response.Response) -> json.Json {
   case message {
-    RoomEvent(chat) ->
+    response.RoomEvent(chat) ->
       json.object([
         #("type", json.string("room_event")),
         #("chat", chat_json(chat)),
       ])
-    ListRooms(rooms:) ->
+    response.ListRooms(rooms:) ->
       json.object([
         #("type", json.string("list_rooms")),
         #(
           "rooms",
-          json.array(rooms, fn(room: RoomSummary) -> json.Json {
+          json.array(rooms, fn(room: response.RoomSummary) -> json.Json {
             json.object([
               #("id", json.string(room.id)),
               #("name", json.string(room.name)),
@@ -59,12 +32,13 @@ fn server_message_json(message: OutgoingMessage) -> json.Json {
           }),
         ),
       ])
-    JoinRoom(result) ->
+    response.JoinRoom(result) ->
       case result {
         Ok(_) ->
           json.object([
             #("type", json.string("join_room")),
             #("status", json.string("ok")),
+            #("reason", json.null()),
           ])
         Error(reason) ->
           json.object([
@@ -73,7 +47,7 @@ fn server_message_json(message: OutgoingMessage) -> json.Json {
             #("reason", json.string(reason)),
           ])
       }
-    ErrorMsg(message) ->
+    response.ErrorMsg(message) ->
       json.object([
         #("type", json.string("error")),
         #("message", json.string(message)),

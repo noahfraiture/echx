@@ -3,8 +3,8 @@ import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/otp/actor
+import domain/response
 import room
-import transport/outgoing
 
 /// Hub where rooms are registered
 type RoomRegistry {
@@ -12,7 +12,7 @@ type RoomRegistry {
 }
 
 pub type RoomRegistryMsg {
-  ListRooms(reply_to: Subject(List(outgoing.RoomSummary)))
+  ListRooms(reply_to: Subject(List(response.RoomSummary)))
   GetRoom(reply_to: Subject(Option(room.RoomHandle)), id: String)
   CreateRoom(reply_to: Subject(Result(Nil, Nil)), name: String)
 }
@@ -27,7 +27,7 @@ fn handle(
       let summaries =
         dict.values(rooms)
         |> list.map(fn(handle: room.RoomHandle) {
-          outgoing.RoomSummary(id: handle.id, name: handle.name, joined: False)
+          response.RoomSummary(id: handle.id, name: handle.name, joined: False)
         })
       actor.send(reply_to, summaries)
       actor.continue(state)

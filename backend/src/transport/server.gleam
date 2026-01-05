@@ -1,11 +1,11 @@
-import chat
-import client
+import domain/chat
+import domain/session
 import gleam/bytes_tree
 import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/io
-import gleam/option.{None}
+import gleam/option.{None, Some}
 import gleam/string
 import logging
 import mist.{type ResponseData}
@@ -30,10 +30,10 @@ pub fn new(
             request: req,
             on_init: fn(conn) {
               #(
-                client.Client(
+                session.Session(
                   registry:,
                   user: chat.Unknown,
-                  inbox: websocket.start_inbox(conn),
+                  inbox: Some(websocket.start_inbox(conn)),
                   rooms: [],
                 ),
                 None,
@@ -50,10 +50,10 @@ pub fn new(
           todo
         }
 
-        ["api", ..path] -> {
-          use ctx <- rest.authenticate(rest.new_context(registry), req)
-          rest.handle(ctx, path)
-        }
+        ["api", ..path] ->
+          rest.authenticate(rest.new_context(registry), req, fn(ctx) {
+            rest.handle(ctx, req, path, entry)
+          })
 
         _ ->
           response.new(404)

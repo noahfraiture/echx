@@ -1,58 +1,40 @@
-//// This message should exist only at the frontier (server.gleam) and should
-//// not navigate in the pipeline.
+//// Wire decoding only.
 
+import domain/request
 import gleam/dynamic/decode
 import gleam/json
 
-/// Message coming from frontend.
-/// JSON must be an object with a string "type" field.
-/// Missing fields or wrong types fail decoding; empty strings are accepted.
-pub type IncomingMessage {
-  /// "chat" payload:
-  /// - required: "message" (string)
-  Chat(message: String)
-  /// "connect" payload:
-  /// - required: "token" (string), "name" (string)
-  Connect(token: String, name: String)
-  /// "list_rooms" payload:
-  /// - no fields
-  ListRooms
-  /// "join_room" payload:
-  /// - required: "room_id" (string)
-  JoinRoom(room_id: String)
-}
-
 pub fn decode_client_messages(
   payload: String,
-) -> Result(List(IncomingMessage), json.DecodeError) {
+) -> Result(List(request.Request), json.DecodeError) {
   json.parse(payload, client_messages_decoder())
 }
 
-fn client_messages_decoder() -> decode.Decoder(List(IncomingMessage)) {
+fn client_messages_decoder() -> decode.Decoder(List(request.Request)) {
   decode.one_of(decode.list(client_message_decoder()), or: [
     client_message_decoder() |> decode.map(fn(msg) { [msg] }),
   ])
 }
 
-fn client_message_decoder() -> decode.Decoder(IncomingMessage) {
+fn client_message_decoder() -> decode.Decoder(request.Request) {
   {
     use kind <- decode.field("type", decode.string)
     case kind {
       "chat" -> {
         use message <- decode.field("message", decode.string)
-        decode.success(Chat(message))
+        decode.success(request.Chat(message))
       }
       "connect" -> {
         use token <- decode.field("token", decode.string)
         use name <- decode.field("name", decode.string)
-        decode.success(Connect(token:, name:))
+        decode.success(request.Connect(token:, name:))
       }
-      "list_rooms" -> decode.success(ListRooms)
+      "list_rooms" -> decode.success(request.ListRooms)
       "join_room" -> {
         use room_id <- decode.field("room_id", decode.string)
-        decode.success(JoinRoom(room_id))
+        decode.success(request.JoinRoom(room_id))
       }
-      _ -> decode.failure(Chat(""), expected: "client message")
+      _ -> decode.failure(request.Chat(""), expected: "client message")
     }
   }
 }

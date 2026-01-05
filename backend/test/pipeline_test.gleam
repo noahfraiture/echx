@@ -1,4 +1,4 @@
-import chat
+import domain/chat
 import gleam/erlang/process
 import gleam/time/timestamp
 import pipeline
