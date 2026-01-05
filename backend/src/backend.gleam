@@ -10,7 +10,8 @@ pub fn main() {
 
   let registry = room_registry.new()
 
-  let assert Ok(_) = room_registry.new_room(registry, "Hey")
+  let assert Ok(_) = room_registry.new_room(registry, "programming")
+  let assert Ok(_) = room_registry.new_room(registry, "cinema")
 
   let assert Ok(validator) = pipeline.start_validation([])
   let assert Ok(_processor) = pipeline.start_processing([validator])

@@ -29,7 +29,7 @@ pub type OutgoingMessage {
 }
 
 pub type RoomSummary {
-  RoomSummary(id: String, name: String)
+  RoomSummary(id: String, name: String, joined: Bool)
 }
 
 pub fn encode_server_message(message: OutgoingMessage) -> String {
@@ -54,6 +54,7 @@ fn server_message_json(message: OutgoingMessage) -> json.Json {
             json.object([
               #("id", json.string(room.id)),
               #("name", json.string(room.name)),
+              #("joined", json.bool(room.joined)),
             ])
           }),
         ),

@@ -27,7 +27,7 @@ fn handle(
       let summaries =
         dict.values(rooms)
         |> list.map(fn(handle: room.RoomHandle) {
-          outgoing.RoomSummary(id: handle.id, name: handle.name)
+          outgoing.RoomSummary(id: handle.id, name: handle.name, joined: False)
         })
       actor.send(reply_to, summaries)
       actor.continue(state)

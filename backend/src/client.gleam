@@ -8,5 +8,6 @@ pub type Client {
     registry: Subject(room_registry.RoomRegistryMsg),
     user: chat.User,
     inbox: Subject(outgoing.OutgoingMessage),
+    rooms: List(String),
   )
 }

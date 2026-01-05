@@ -99,3 +99,71 @@ pub fn encode_server_error_test() {
 
   let assert Ok(#("error", "boom")) = json.parse(encoded, decoder)
 }
+
+pub fn encode_server_list_rooms_test() {
+  let decoder =
+    decode.field("type", decode.string, fn(msg_type) {
+      decode.field(
+        "rooms",
+        decode.list(
+          decode.field("id", decode.string, fn(id) {
+            decode.field("name", decode.string, fn(name) {
+              decode.field("joined", decode.bool, fn(joined) {
+                decode.success(#(id, #(name, joined)))
+              })
+            })
+          }),
+        ),
+        fn(rooms) { decode.success(#(msg_type, rooms)) },
+      )
+    })
+
+  let encoded =
+    outgoing.encode_server_message(
+      outgoing.ListRooms([
+        outgoing.RoomSummary(id: "lobby", name: "Lobby", joined: True),
+        outgoing.RoomSummary(id: "games", name: "Games", joined: False),
+      ]),
+    )
+
+  let assert Ok(#("list_rooms", rooms)) = json.parse(encoded, decoder)
+  assert rooms == [
+    #("lobby", #("Lobby", True)),
+    #("games", #("Games", False)),
+  ]
+}
+
+pub fn encode_server_join_room_ok_test() {
+  let decoder =
+    decode.field("type", decode.string, fn(msg_type) {
+      decode.field("status", decode.string, fn(status) {
+        decode.field("reason", decode.optional(decode.string), fn(reason) {
+          decode.success(#(msg_type, #(status, reason)))
+        })
+      })
+    })
+
+  let encoded =
+    outgoing.encode_server_message(outgoing.JoinRoom(Ok(Nil)))
+
+  let assert Ok(#("join_room", #("ok", None))) = json.parse(encoded, decoder)
+}
+
+pub fn encode_server_join_room_error_test() {
+  let decoder =
+    decode.field("type", decode.string, fn(msg_type) {
+      decode.field("status", decode.string, fn(status) {
+        decode.field("reason", decode.string, fn(reason) {
+          decode.success(#(msg_type, #(status, reason)))
+        })
+      })
+    })
+
+  let encoded =
+    outgoing.encode_server_message(
+      outgoing.JoinRoom(Error("room not found")),
+    )
+
+  let assert Ok(#("join_room", #("error", "room not found"))) =
+    json.parse(encoded, decoder)
+}

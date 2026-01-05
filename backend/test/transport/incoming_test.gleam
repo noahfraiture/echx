@@ -56,6 +56,22 @@ pub fn decode_client_connect_message_wrong_types_test() {
   let assert Error(_) = incoming.decode_client_messages(payload)
 }
 
+pub fn decode_client_list_rooms_message_test() {
+  let payload = "{\"type\":\"list_rooms\"}"
+  let assert Ok([incoming.ListRooms]) = incoming.decode_client_messages(payload)
+}
+
+pub fn decode_client_join_room_message_test() {
+  let payload = "{\"type\":\"join_room\",\"room_id\":\"lobby\"}"
+  let assert Ok([incoming.JoinRoom("lobby")]) =
+    incoming.decode_client_messages(payload)
+}
+
+pub fn decode_client_join_room_missing_room_id_test() {
+  let payload = "{\"type\":\"join_room\"}"
+  let assert Error(_) = incoming.decode_client_messages(payload)
+}
+
 pub fn decode_client_message_unknown_type_test() {
   let payload = "{\"type\":\"noop\"}"
   let assert Error(_) = incoming.decode_client_messages(payload)

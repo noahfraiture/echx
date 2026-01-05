@@ -16,13 +16,19 @@ body:ws {
   content: '''
     [
       {
+        "type": "list_rooms"
+      },
+      {
         "type": "connect",
         "token": "123",
         "name": "noah"
       },
       {
-        "type": "chat",
-        "message": "profile"
+        "type": "join_room",
+        "room_id": "programming"
+      },
+      {
+        "type": "list_rooms"
       }
     ]
   '''

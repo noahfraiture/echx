@@ -4,6 +4,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/option
 import gleam/otp/actor
+import gleam/set
 import gleam/time/timestamp
 import mist
 import pipeline
@@ -114,6 +115,13 @@ fn handle_client_messages(
     }
     incoming.ListRooms -> {
       let rooms = actor.call(state.registry, 1000, room_registry.ListRooms)
+      let rooms =
+        list.map(rooms, fn(room: outgoing.RoomSummary) {
+          outgoing.RoomSummary(
+            ..room,
+            joined: list.contains(state.rooms, room.id),
+          )
+        })
       let _ =
         mist.send_text_frame(
           conn,
@@ -128,7 +136,10 @@ fn handle_client_messages(
           conn,
           outgoing.encode_server_message(outgoing.JoinRoom(result)),
         )
-      state
+      case result {
+        Error(_) -> state
+        Ok(_) -> client.Client(..state, rooms: [room_id, ..state.rooms])
+      }
     }
   }
 }

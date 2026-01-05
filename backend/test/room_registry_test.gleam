@@ -6,10 +6,6 @@ import gleam/otp/actor
 import room
 import room_registry
 
-fn room_handle(id: String, name: String) -> room.RoomHandle {
-  room.RoomHandle(id: id, name: name, command: process.new_subject())
-}
-
 pub fn list_rooms_empty_by_default_test() {
   let registry = room_registry.new()
   let response = actor.call(registry, 50, room_registry.ListRooms)
@@ -31,11 +27,11 @@ pub fn rooms_can_be_added_and_retrieved_test() {
   let registry = room_registry.new()
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.AddRoom(reply_to, room_handle("alpha", "Alpha"))
+      room_registry.CreateRoom(reply_to, "alpha")
     })
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.AddRoom(reply_to, room_handle("beta", "Beta"))
+      room_registry.CreateRoom(reply_to, "beta")
     })
 
   let listed_summaries = actor.call(registry, 50, room_registry.ListRooms)
@@ -45,31 +41,34 @@ pub fn rooms_can_be_added_and_retrieved_test() {
       dict.insert(acc, summary.id, summary.name)
     })
 
-  assert dict.get(summary_by_id, "alpha") == Ok("Alpha")
-  assert dict.get(summary_by_id, "beta") == Ok("Beta")
+  assert dict.get(summary_by_id, "alpha") == Ok("alpha")
+  assert dict.get(summary_by_id, "beta") == Ok("beta")
 
-  let assert option.Some(room.RoomHandle(id: "alpha", name: "Alpha", ..)) =
+  let assert option.Some(room.RoomHandle(id: "alpha", name: "alpha", ..)) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.GetRoom(reply_to, "alpha")
     })
-  let assert option.Some(room.RoomHandle(id: "beta", name: "Beta", ..)) =
+  let assert option.Some(room.RoomHandle(id: "beta", name: "beta", ..)) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.GetRoom(reply_to, "beta")
     })
 }
 
-pub fn adding_a_room_twice_returns_error_and_leaves_original_test() {
+pub fn creating_a_room_twice_is_idempotent_test() {
   let registry = room_registry.new()
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.AddRoom(reply_to, room_handle("alpha", "Alpha"))
+      room_registry.CreateRoom(reply_to, "alpha")
     })
-  let assert Error(Nil) =
+  let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.AddRoom(reply_to, room_handle("alpha", "Changed Alpha"))
+      room_registry.CreateRoom(reply_to, "alpha")
     })
 
-  let assert option.Some(room.RoomHandle(name: "Alpha", ..)) =
+  let listed_summaries = actor.call(registry, 50, room_registry.ListRooms)
+  assert list.length(listed_summaries) == 1
+
+  let assert option.Some(room.RoomHandle(name: "alpha", ..)) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.GetRoom(reply_to, "alpha")
     })
@@ -77,11 +76,9 @@ pub fn adding_a_room_twice_returns_error_and_leaves_original_test() {
 
 pub fn registry_returns_real_room_handles_test() {
   let registry = room_registry.new()
-  let assert Ok(handle) = room.start("lounge")
-
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.AddRoom(reply_to, handle)
+      room_registry.CreateRoom(reply_to, "lounge")
     })
 
   let assert option.Some(room.RoomHandle(
