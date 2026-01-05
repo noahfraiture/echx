@@ -14,7 +14,7 @@ type RoomRegistry {
 pub type RoomRegistryMsg {
   ListRooms(reply_to: Subject(List(outgoing.RoomSummary)))
   GetRoom(reply_to: Subject(Option(room.RoomHandle)), id: String)
-  AddRoom(reply_to: Subject(Result(Nil, Nil)), room: room.RoomHandle)
+  CreateRoom(reply_to: Subject(Result(Nil, Nil)), name: String)
 }
 
 fn handle(
@@ -36,19 +36,34 @@ fn handle(
       actor.send(reply_to, option.from_result(dict.get(rooms, id)))
       actor.continue(state)
     }
-    AddRoom(reply_to:, room:) -> {
-      case dict.has_key(rooms, room.id) {
-        True -> {
-          actor.send(reply_to, Error(Nil))
-          actor.continue(state)
-        }
+    CreateRoom(reply_to:, name:) -> {
+      case dict.has_key(state.rooms, name) {
         False -> {
+          case room.start(name) {
+            Error(_) -> {
+              actor.send(reply_to, Error(Nil))
+              actor.continue(state)
+            }
+            Ok(handle) -> {
+              actor.send(reply_to, Ok(Nil))
+              actor.continue(RoomRegistry(dict.insert(rooms, name, handle)))
+            }
+          }
+        }
+        True -> {
           actor.send(reply_to, Ok(Nil))
-          actor.continue(RoomRegistry(rooms: dict.insert(rooms, room.id, room)))
+          actor.continue(state)
         }
       }
     }
   }
+}
+
+pub fn new_room(
+  registry: Subject(RoomRegistryMsg),
+  name: String,
+) -> Result(Nil, Nil) {
+  actor.call(registry, 1000, CreateRoom(_, name))
 }
 
 pub fn new() -> Subject(RoomRegistryMsg) {

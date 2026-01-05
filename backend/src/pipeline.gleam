@@ -77,8 +77,10 @@ pub fn start_processing(
   start_stage(Processing([]), upstream)
 }
 
-pub fn start_logger() -> Result(Subject(Message), actor.StartError) {
-  start_stage(Logger, [])
+pub fn start_logger(
+  upstream: List(Subject(Message)),
+) -> Result(Subject(Message), actor.StartError) {
+  start_stage(Logger, upstream)
 }
 
 // Shared starter for any stage.
