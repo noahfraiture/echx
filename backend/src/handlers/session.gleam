@@ -1,3 +1,5 @@
+//// Session updates for connect requests.
+
 import domain/chat
 import domain/session
 

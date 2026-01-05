@@ -3,7 +3,7 @@ import domain/session
 import gleam/erlang/process
 import gleam/option.{None}
 import handlers/chat as chat_handler
-import pipeline
+import pipeline/envelope
 
 pub fn chat_sends_pipeline_message_test() {
   let entry = process.new_subject()
@@ -21,7 +21,7 @@ pub fn chat_sends_pipeline_message_test() {
   assert reply == None
   assert next_state.user == state.user
 
-  let assert Ok(pipeline.Chat(chat.Chat(content: content, ..))) =
+  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
     process.receive(entry, within: 50)
   assert content == "hello"
 }

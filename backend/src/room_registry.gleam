@@ -1,9 +1,11 @@
+//// Room registry process for listing and creating rooms.
+
+import domain/response
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/otp/actor
-import domain/response
 import room
 
 /// Hub where rooms are registered

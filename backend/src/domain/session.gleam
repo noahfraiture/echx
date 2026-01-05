@@ -1,3 +1,5 @@
+//// Session and REST context state.
+
 import domain/chat
 import domain/response
 import gleam/erlang/process.{type Subject}

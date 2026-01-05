@@ -1,6 +1,10 @@
+//// Application entrypoint wiring registry, pipeline, and transport.
+
 import gleam/erlang/process
 import logging
-import pipeline
+import pipeline/logger
+import pipeline/processing
+import pipeline/validation
 import room_registry
 import transport/server
 
@@ -13,9 +17,9 @@ pub fn main() {
   let assert Ok(_) = room_registry.new_room(registry, "programming")
   let assert Ok(_) = room_registry.new_room(registry, "cinema")
 
-  let assert Ok(validator) = pipeline.start_validation([])
-  let assert Ok(_processor) = pipeline.start_processing([validator])
-  let assert Ok(_logger) = pipeline.start_logger([validator])
+  let assert Ok(validator) = validation.start([])
+  let assert Ok(_processor) = processing.start([validator])
+  let assert Ok(_logger) = logger.start([validator])
 
   let assert Ok(_) = server.new(registry, validator)
 

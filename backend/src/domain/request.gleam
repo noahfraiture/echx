@@ -1,3 +1,5 @@
+//// Transport-agnostic incoming request types.
+
 /// Message coming from clients (WebSocket or REST).
 pub type Request {
   Chat(message: String)

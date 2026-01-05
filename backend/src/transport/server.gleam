@@ -1,3 +1,5 @@
+//// HTTP server wiring for REST and WebSocket.
+
 import domain/chat
 import domain/session
 import gleam/bytes_tree
@@ -9,14 +11,14 @@ import gleam/option.{None, Some}
 import gleam/string
 import logging
 import mist.{type ResponseData}
-import pipeline
+import pipeline/envelope
 import room_registry
 import transport/rest
 import transport/websocket
 
 pub fn new(
   registry: Subject(room_registry.RoomRegistryMsg),
-  entry: Subject(pipeline.Message),
+  entry: Subject(envelope.Envelope),
 ) {
   let assert Ok(_) =
     fn(req: Request(mist.Connection)) -> Response(ResponseData) {

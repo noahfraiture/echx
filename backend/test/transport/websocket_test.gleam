@@ -1,19 +1,16 @@
 import domain/chat
-import domain/request
 import domain/response
 import domain/session
 import gleam/erlang/process
 import gleam/list
 import gleam/option.{None}
 import gleam/otp/actor
-import handlers/dispatch
+import transport/websocket
 import handlers/reply
 import pipeline/envelope
 import room_registry
 
-fn setup_registry(
-  names: List(String),
-) -> process.Subject(room_registry.RoomRegistryMsg) {
+fn setup_registry(names: List(String)) -> process.Subject(room_registry.RoomRegistryMsg) {
   let registry = room_registry.new()
   names
   |> list.each(fn(name) {
@@ -25,31 +22,9 @@ fn setup_registry(
   registry
 }
 
-pub fn handle_request_connect_sets_user_test() {
-  let entry = process.new_subject()
-  let registry = process.new_subject()
-  let state =
-    session.Session(
-      registry: registry,
-      user: chat.Unknown,
-      inbox: None,
-      rooms: [],
-    )
-
-  let #(next_state, reply) =
-    dispatch.handle_request(
-      entry,
-      state,
-      request.Connect(token: "token", name: "Neo"),
-    )
-
-  let assert chat.User(token: "token", name: "Neo") = next_state.user
-  assert reply == None
-}
-
-pub fn handle_requests_collects_replies_test() {
-  let entry = process.new_subject()
+pub fn list_rooms_payload_returns_reply_test() {
   let registry = setup_registry(["lobby"])
+  let entry = process.new_subject()
   let state =
     session.Session(
       registry: registry,
@@ -59,15 +34,15 @@ pub fn handle_requests_collects_replies_test() {
     )
 
   let #(next_state, replies) =
-    dispatch.handle_requests(entry, state, [request.ListRooms])
+    websocket.handle_payload(entry, state, "{\"type\":\"list_rooms\"}")
 
   assert next_state.user == state.user
   let assert [reply.Response(response.ListRooms(_))] = replies
 }
 
-pub fn handle_requests_chat_has_no_reply_test() {
+pub fn chat_payload_sends_pipeline_message_test() {
+  let registry = setup_registry([])
   let entry = process.new_subject()
-  let registry = process.new_subject()
   let state =
     session.Session(
       registry: registry,
@@ -77,12 +52,30 @@ pub fn handle_requests_chat_has_no_reply_test() {
     )
 
   let #(next_state, replies) =
-    dispatch.handle_requests(entry, state, [request.Chat("hello")])
+    websocket.handle_payload(entry, state, "{\"type\":\"chat\",\"message\":\"hi\"}")
 
   assert next_state.user == state.user
   assert replies == []
 
   let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
     process.receive(entry, within: 50)
-  assert content == "hello"
+  assert content == "hi"
+}
+
+pub fn invalid_json_returns_no_reply_test() {
+  let registry = setup_registry([])
+  let entry = process.new_subject()
+  let state =
+    session.Session(
+      registry: registry,
+      user: chat.User(token: "token", name: "Neo"),
+      inbox: None,
+      rooms: [],
+    )
+
+  let #(next_state, replies) =
+    websocket.handle_payload(entry, state, "not-json")
+
+  assert next_state.user == state.user
+  assert replies == []
 }

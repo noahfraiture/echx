@@ -1,3 +1,8 @@
+//// Room process state and commands.
+//// This should not be contacted by a user directly.
+//// Sent message should enter the pipeline.
+//// The room registry handle room control.
+
 import domain/chat
 import domain/response
 import gleam/erlang/process.{type Subject}

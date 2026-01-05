@@ -1,3 +1,5 @@
+//// Transport-agnostic response types.
+
 import domain/chat
 
 /// Message sent to clients (WebSocket or REST).

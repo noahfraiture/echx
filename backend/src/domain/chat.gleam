@@ -1,3 +1,5 @@
+//// Chat domain types.
+
 import gleam/time/timestamp
 
 pub type User {

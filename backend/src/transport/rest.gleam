@@ -1,4 +1,7 @@
+//// REST adapter for JSON requests.
+
 import domain/chat
+import domain/response as domain_response
 import domain/session
 import gleam/bit_array
 import gleam/bytes_tree
@@ -7,20 +10,19 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/option.{None, Some}
 import gleam/result
-import domain/response as domain_response
 import handlers/dispatch
 import handlers/reply
 import mist
-import pipeline
+import pipeline/envelope
+import room_registry
 import transport/incoming
 import transport/outgoing
-import room_registry
 
 pub fn handle(
   ctx: session.Context,
   req: Request(mist.Connection),
   path: List(String),
-  entry: Subject(pipeline.Message),
+  entry: Subject(envelope.Envelope),
 ) -> Response(mist.ResponseData) {
   case path {
     _ -> handle_json(ctx, req, entry)
@@ -30,7 +32,7 @@ pub fn handle(
 fn handle_json(
   ctx: session.Context,
   req: Request(mist.Connection),
-  entry: Subject(pipeline.Message),
+  entry: Subject(envelope.Envelope),
 ) -> Response(mist.ResponseData) {
   case ctx.registry, ctx.user {
     Some(registry), Some(user) -> {
@@ -39,8 +41,7 @@ fn handle_json(
         Ok(req) -> {
           case bit_array.to_string(req.body) {
             Error(_) -> bad_request("invalid body")
-            Ok(payload) ->
-              handle_payload(registry, user, entry, payload)
+            Ok(payload) -> handle_payload(registry, user, entry, payload)
           }
         }
       }
@@ -51,10 +52,10 @@ fn handle_json(
   }
 }
 
-fn handle_payload(
+pub fn handle_payload(
   registry: Subject(room_registry.RoomRegistryMsg),
   user: chat.User,
-  entry: Subject(pipeline.Message),
+  entry: Subject(envelope.Envelope),
   payload: String,
 ) -> Response(mist.ResponseData) {
   case incoming.decode_client_messages(payload) {
@@ -69,8 +70,7 @@ fn handle_payload(
               inbox: None,
               rooms: [],
             )
-          let #(_, replies) =
-            dispatch.handle_requests(entry, state, [msg])
+          let #(_, replies) = dispatch.handle_requests(entry, state, [msg])
           reply_to_response(replies)
         }
         _ -> bad_request("only single-message requests are supported")
@@ -92,8 +92,7 @@ fn reply_to_response(replies: List(reply.Reply)) -> Response(mist.ResponseData) 
       response.new(200)
       |> response.set_body(mist.Bytes(bytes_tree.from_string(payload)))
     }
-    [reply.Text(_)] ->
-      bad_request("text responses are not supported over rest")
+    [reply.Text(_)] -> bad_request("text responses are not supported over rest")
     _ -> bad_request("only single responses are supported")
   }
 }

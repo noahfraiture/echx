@@ -1,3 +1,5 @@
+//// Room list and join handling.
+
 import domain/chat
 import domain/response
 import domain/session
