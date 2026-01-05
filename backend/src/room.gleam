@@ -14,11 +14,8 @@ pub type RoomHandle {
   RoomHandle(id: String, name: String, command: Subject(RoomCommand))
 }
 
-pub type JoinResult =
-  Result(Nil, Nil)
-
 pub type RoomCommand {
-  Join(reply_to: Subject(JoinResult), inbox: Subject(response.Response))
+  Join(reply_to: Subject(Result(Nil, Nil)), inbox: Subject(response.Response))
   Publish(chat: chat.Chat)
 }
 

@@ -11,5 +11,6 @@ pub type Response {
 }
 
 pub type RoomSummary {
+  /// `joined` is only meaningful for WebSocket clients.
   RoomSummary(id: String, name: String, joined: Bool)
 }
