@@ -28,6 +28,7 @@
         {
           gleam = pkgs.mkShell {
             packages = with pkgs; [
+              pnpm
               rebar3
               gleam
               erlang
