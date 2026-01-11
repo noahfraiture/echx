@@ -1,13 +1,63 @@
-export function Rooms() {
+import type { RoomSummary } from "./api/types";
+
+type RoomsProps = {
+  roomID: RoomSummary["id"] | null;
+  rooms: RoomSummary[];
+  setRoomID: (roomID: RoomSummary["id"]) => void;
+};
+
+export function Rooms({ roomID, rooms, setRoomID }: RoomsProps) {
   return (
     <div className="w-72 p-4">
-      <div className="h-full w-full card card-body bg-base-200 shadow-sm">
-        <h2 className="card-title">Rooms</h2>
-        <li>General</li>
-        <li>Design</li>
-        <li>Frontend</li>
-        <li>Backend</li>
-        <li>Random</li>
+      <div className="h-full w-full card overflow-hidden border border-base-300 bg-base-100 shadow-lg">
+        <div className="bg-linear-to-r from-base-200 via-base-100 to-base-200 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-base-content/60">Rooms</p>
+              <h2 className="text-lg font-semibold text-base-content">Where to?</h2>
+            </div>
+            <span className="badge badge-outline badge-sm">{rooms.length}</span>
+          </div>
+        </div>
+        <div className="card-body gap-3">
+          <div className="flex flex-col gap-2">
+            {rooms.map((room) => {
+              const isActive = room.id === roomID;
+              return (
+                <button
+                  key={room.id}
+                  type="button"
+                  onClick={() => (isActive ? setRoomID("") : setRoomID(room.id))}
+                  className={[
+                    "group relative flex items-center justify-between rounded-2xl px-4 py-3 text-left",
+                    "border border-base-200 bg-base-100 transition-all",
+                    "hover:border-base-300 hover:bg-base-200/70",
+                    isActive ? "border-primary/40 bg-primary/10 ring-2 ring-primary/30" : "",
+                    room.joined ? "font-semibold" : "font-medium text-base-content/80",
+                  ].join(" ")}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={[
+                        "h-2.5 w-2.5 rounded-full",
+                        isActive ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]" : "bg-base-300",
+                      ].join(" ")}
+                    />
+                    <span className="truncate">{room.name}</span>
+                  </span>
+                  <span
+                    className={[
+                      "badge badge-xs uppercase tracking-wide",
+                      isActive ? "badge-primary text-primary-content" : "badge-ghost",
+                    ].join(" ")}
+                  >
+                    {isActive ? "selected" : room.joined ? "joined" : "open"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

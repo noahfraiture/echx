@@ -20,6 +20,7 @@ This file covers both the backend and frontend. The backend guidelines live in t
 ### Instruction and Style
 
 - Update `AGENTS.md` whenever architecture, key commands, or module ownership changes in the backend or frontend.
+- Keep backend request/response wire types and the frontend protocol mirror in sync whenever either changes.
 
 ### Messaging Model
 
@@ -281,4 +282,7 @@ Rooms do not use Subjects as “topics” for membership/broadcast fan-out.
 
 ### Project Structure & Module Organization
 
-- TODO: add frontend-specific structure, conventions, and commands here once the frontend is introduced.
+- React app with React Compiler enabled.
+- Tailwind CSS for styling.
+- DaisyUI as the component/theme layer on top of Tailwind.
+- `src/api/types.ts` mirrors backend `domain/request.gleam` and `domain/response.gleam` wire types; `src/api/http.ts` and `src/api/ws.ts` provide transport helpers.
