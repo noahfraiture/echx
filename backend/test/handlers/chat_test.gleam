@@ -16,12 +16,14 @@ pub fn chat_sends_pipeline_message_test() {
       rooms: [],
     )
 
-  let #(next_state, reply) = chat_handler.handle(entry, state, "hello")
+  let #(next_state, reply) = chat_handler.handle(entry, state, "hello", "")
 
   assert reply == None
   assert next_state.user == state.user
 
-  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
-    process.receive(entry, within: 50)
+  let assert Ok(envelope.Event(envelope.Chat(
+    chat.Chat(content: content, ..),
+    "",
+  ))) = process.receive(entry, within: 50)
   assert content == "hello"
 }

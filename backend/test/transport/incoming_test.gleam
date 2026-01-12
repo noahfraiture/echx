@@ -2,16 +2,16 @@ import domain/request
 import transport/incoming
 
 pub fn decode_client_messages_single_object_test() {
-  let payload = "{\"type\":\"chat\",\"message\":\"hi\"}"
-  let assert Ok([request.Chat("hi")]) =
+  let payload = "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"}"
+  let assert Ok([request.Chat("hi", "lobby")]) =
     incoming.decode_client_messages(payload)
 }
 
 pub fn decode_client_messages_list_test() {
   let payload =
-    "[{\"type\":\"chat\",\"message\":\"hi\"},{\"type\":\"connect\",\"token\":\"token-1\",\"name\":\"Neo\"}]"
+    "[{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"},{\"type\":\"connect\",\"token\":\"token-1\",\"name\":\"Neo\"}]"
   let assert Ok([
-    request.Chat("hi"),
+    request.Chat("hi", "lobby"),
     request.Connect(token: "token-1", name: "Neo"),
   ]) = incoming.decode_client_messages(payload)
 }

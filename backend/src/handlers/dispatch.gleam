@@ -33,7 +33,8 @@ pub fn handle_request(
   req: request.Request,
 ) -> #(session.Session, Option(reply.Reply)) {
   case req {
-    request.Chat(content) -> chat.handle(entry, state, content)
+    request.Chat(content, room_id) ->
+      chat.handle(entry, state, content, room_id)
     request.Connect(token:, name:) -> #(
       session_handler.connect(state, token, name),
       None,

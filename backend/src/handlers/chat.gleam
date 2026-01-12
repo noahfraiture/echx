@@ -13,16 +13,14 @@ pub fn handle(
   entry: Subject(envelope.Envelope),
   state: session.Session,
   content: String,
+  room_id: String,
 ) -> #(session.Session, Option(reply.Reply)) {
   actor.send(
     entry,
-    envelope.Event(
-      envelope.Chat(chat.Chat(
-        content:,
-        user: state.user,
-        timestamp: timestamp.system_time(),
-      )),
-    ),
+    envelope.Event(envelope.Chat(
+      chat.Chat(content:, user: state.user, timestamp: timestamp.system_time()),
+      room_id,
+    )),
   )
   #(state, None)
 }

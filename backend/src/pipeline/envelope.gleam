@@ -8,7 +8,7 @@ pub type Control {
 }
 
 pub type Event {
-  Chat(chat.Chat)
+  Chat(chat.Chat, String)
 }
 
 pub type Envelope {

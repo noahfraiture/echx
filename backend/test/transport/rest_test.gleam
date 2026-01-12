@@ -12,7 +12,9 @@ import pipeline/envelope
 import room_registry
 import transport/rest
 
-fn setup_registry(names: List(String)) -> process.Subject(room_registry.RoomRegistryMsg) {
+fn setup_registry(
+  names: List(String),
+) -> process.Subject(room_registry.RoomRegistryMsg) {
   let registry = room_registry.new()
   names
   |> list.each(fn(name) {
@@ -67,14 +69,16 @@ pub fn chat_payload_sends_pipeline_message_test() {
       registry,
       chat.User(token: "token", name: "Neo"),
       entry,
-      "{\"type\":\"chat\",\"message\":\"hi\"}",
+      "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"}",
     )
 
   let http_response.Response(status: status, ..) = resp
   assert status == 204
 
-  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
-    process.receive(entry, within: 50)
+  let assert Ok(envelope.Event(envelope.Chat(
+    chat.Chat(content: content, ..),
+    "lobby",
+  ))) = process.receive(entry, within: 50)
   assert content == "hi"
 }
 
@@ -102,8 +106,7 @@ pub fn join_room_payload_without_inbox_returns_error_test() {
       })
     })
 
-  let assert Ok(#("join_room", #("error", reason))) =
-    json.parse(body, decoder)
+  let assert Ok(#("join_room", #("error", reason))) = json.parse(body, decoder)
   assert reason == "no inbox available"
 }
 

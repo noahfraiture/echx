@@ -49,10 +49,15 @@ pub fn two_stage_chain_forwards_to_downstream_listener_test() {
   let listener = process.new_subject()
 
   process.send(processing, envelope.Control(envelope.Subscribe(listener)))
-  process.send(validation, envelope.Event(envelope.Chat(sample_chat("two-stage"))))
+  process.send(
+    validation,
+    envelope.Event(envelope.Chat(sample_chat("two-stage"), "")),
+  )
 
-  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
-    process.receive(listener, within: 50)
+  let assert Ok(envelope.Event(envelope.Chat(
+    chat.Chat(content: content, ..),
+    "",
+  ))) = process.receive(listener, within: 50)
   assert content == "two-stage"
 }
 
@@ -63,9 +68,14 @@ pub fn multi_stage_chain_forwards_to_terminal_listener_test() {
   let listener = process.new_subject()
 
   process.send(second, envelope.Control(envelope.Subscribe(listener)))
-  process.send(validation, envelope.Event(envelope.Chat(sample_chat("multi-stage"))))
+  process.send(
+    validation,
+    envelope.Event(envelope.Chat(sample_chat("multi-stage"), "")),
+  )
 
-  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
-    process.receive(listener, within: 50)
+  let assert Ok(envelope.Event(envelope.Chat(
+    chat.Chat(content: content, ..),
+    "",
+  ))) = process.receive(listener, within: 50)
   assert content == "multi-stage"
 }

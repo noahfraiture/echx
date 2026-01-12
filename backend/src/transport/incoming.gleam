@@ -22,7 +22,8 @@ fn client_message_decoder() -> decode.Decoder(request.Request) {
     case kind {
       "chat" -> {
         use message <- decode.field("message", decode.string)
-        decode.success(request.Chat(message))
+        use room_id <- decode.field("room_id", decode.string)
+        decode.success(request.Chat(message, room_id))
       }
       "connect" -> {
         use token <- decode.field("token", decode.string)
@@ -34,7 +35,7 @@ fn client_message_decoder() -> decode.Decoder(request.Request) {
         use room_id <- decode.field("room_id", decode.string)
         decode.success(request.JoinRoom(room_id))
       }
-      _ -> decode.failure(request.Chat(""), expected: "client message")
+      _ -> decode.failure(request.Chat("", ""), expected: "client message")
     }
   }
 }

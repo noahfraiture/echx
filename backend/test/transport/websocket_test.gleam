@@ -5,12 +5,14 @@ import gleam/erlang/process
 import gleam/list
 import gleam/option.{None}
 import gleam/otp/actor
-import transport/websocket
 import handlers/reply
 import pipeline/envelope
 import room_registry
+import transport/websocket
 
-fn setup_registry(names: List(String)) -> process.Subject(room_registry.RoomRegistryMsg) {
+fn setup_registry(
+  names: List(String),
+) -> process.Subject(room_registry.RoomRegistryMsg) {
   let registry = room_registry.new()
   names
   |> list.each(fn(name) {
@@ -52,13 +54,19 @@ pub fn chat_payload_sends_pipeline_message_test() {
     )
 
   let #(next_state, replies) =
-    websocket.handle_payload(entry, state, "{\"type\":\"chat\",\"message\":\"hi\"}")
+    websocket.handle_payload(
+      entry,
+      state,
+      "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"}",
+    )
 
   assert next_state.user == state.user
   assert replies == []
 
-  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
-    process.receive(entry, within: 50)
+  let assert Ok(envelope.Event(envelope.Chat(
+    chat.Chat(content: content, ..),
+    "lobby",
+  ))) = process.receive(entry, within: 50)
   assert content == "hi"
 }
 

@@ -77,12 +77,14 @@ pub fn handle_requests_chat_has_no_reply_test() {
     )
 
   let #(next_state, replies) =
-    dispatch.handle_requests(entry, state, [request.Chat("hello")])
+    dispatch.handle_requests(entry, state, [request.Chat("hello", "")])
 
   assert next_state.user == state.user
   assert replies == []
 
-  let assert Ok(envelope.Event(envelope.Chat(chat.Chat(content: content, ..)))) =
-    process.receive(entry, within: 50)
+  let assert Ok(envelope.Event(envelope.Chat(
+    chat.Chat(content: content, ..),
+    "",
+  ))) = process.receive(entry, within: 50)
   assert content == "hello"
 }

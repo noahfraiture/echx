@@ -11,8 +11,9 @@ pub type State {
 
 fn handle(
   _state: State,
-  _msg: envelope.Envelope,
+  msg: envelope.Envelope,
 ) -> actor.Next(State, envelope.Envelope) {
+  echo msg as ""
   actor.continue(Logger)
 }
 

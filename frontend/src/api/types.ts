@@ -1,5 +1,5 @@
 export type Request =
-  | { type: "chat"; message: string }
+  | { type: "chat"; message: string; room_id: string }
   | { type: "connect"; token: string; name: string }
   | { type: "list_rooms" }
   | { type: "join_room"; room_id: string };

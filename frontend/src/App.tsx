@@ -38,7 +38,7 @@ export function App({ socket }: AppProps) {
       [roomID]: [...(prev[roomID] ?? []), chat],
     }));
 
-    const chatRequest: Request = { type: "chat", message: content };
+    const chatRequest: Request = { type: "chat", message: content, room_id: roomID };
     listRoomsRequest(chatRequest);
   };
 

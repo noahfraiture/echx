@@ -36,6 +36,7 @@ pub fn handler(
 ) ->
   mist.Next(session.Session, a) {
   fn(state, message, conn) {
+    echo message as "message"
     case message {
       mist.Text("ping") -> {
         let assert Ok(_) = mist.send_text_frame(conn, "pong")
