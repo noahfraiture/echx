@@ -18,7 +18,7 @@ pub fn main() {
   let assert Ok(_) = room_registry.new_room(registry, "cinema")
 
   let assert Ok(validator) = validation.start([])
-  let assert Ok(_processor) = processing.start([validator])
+  let assert Ok(_processor) = processing.start([validator], registry)
   let assert Ok(_logger) = logger.start([validator])
 
   let assert Ok(_) = server.new(registry, validator)

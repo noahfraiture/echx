@@ -3,10 +3,12 @@ import type { RoomSummary } from "./api/types";
 type RoomsProps = {
   roomID: RoomSummary["id"] | null;
   rooms: RoomSummary[];
+  joinedRooms: Set<RoomSummary["id"]>;
   setRoomID: (roomID: RoomSummary["id"]) => void;
+  joinRoom: (roomID: RoomSummary["id"]) => void;
 };
 
-export function Rooms({ roomID, rooms, setRoomID }: RoomsProps) {
+export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: RoomsProps) {
   return (
     <div className="w-72 p-4">
       <div className="h-full w-full card overflow-hidden border border-base-300 bg-base-100 shadow-lg">
@@ -23,37 +25,58 @@ export function Rooms({ roomID, rooms, setRoomID }: RoomsProps) {
           <div className="flex flex-col gap-2">
             {rooms.map((room) => {
               const isActive = room.id === roomID;
+              const isJoined = joinedRooms.has(room.id) || room.joined;
               return (
-                <button
+                <div
                   key={room.id}
-                  type="button"
-                  onClick={() => (isActive ? setRoomID("") : setRoomID(room.id))}
                   className={[
                     "group relative flex items-center justify-between rounded-2xl px-4 py-3 text-left",
                     "border border-base-200 bg-base-100 transition-all",
                     "hover:border-base-300 hover:bg-base-200/70",
                     isActive ? "border-primary/40 bg-primary/10 ring-2 ring-primary/30" : "",
-                    room.joined ? "font-semibold" : "font-medium text-base-content/80",
+                    isJoined ? "font-semibold" : "font-medium text-base-content/80",
                   ].join(" ")}
                 >
-                  <span className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => (isActive ? setRoomID("") : setRoomID(room.id))}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
                     <span
                       className={[
                         "h-2.5 w-2.5 rounded-full",
-                        isActive ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]" : "bg-base-300",
+                        isActive
+                          ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]"
+                          : isJoined
+                            ? "bg-success shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"
+                            : "bg-base-300",
                       ].join(" ")}
                     />
                     <span className="truncate">{room.name}</span>
-                  </span>
-                  <span
-                    className={[
-                      "badge badge-xs uppercase tracking-wide",
-                      isActive ? "badge-primary text-primary-content" : "badge-ghost",
-                    ].join(" ")}
-                  >
-                    {isActive ? "selected" : room.joined ? "joined" : "open"}
-                  </span>
-                </button>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={[
+                        "badge badge-xs uppercase tracking-wide",
+                        isActive
+                          ? "badge-primary text-primary-content"
+                          : isJoined
+                            ? "badge-success text-success-content"
+                            : "badge-ghost",
+                      ].join(" ")}
+                    >
+                      {isActive ? "selected" : isJoined ? "joined" : "open"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => joinRoom(room.id)}
+                      disabled={isJoined}
+                      className="btn btn-xs rounded-full border-base-300 bg-base-100 text-base-content shadow-sm hover:border-primary/40 hover:bg-primary/10 disabled:opacity-60"
+                    >
+                      Join
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>

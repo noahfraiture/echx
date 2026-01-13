@@ -13,6 +13,7 @@ type AppProps = {
 export function App({ socket }: AppProps) {
   const [roomID, setRoomID] = useState<string>("");
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set());
   const [messagesByRoom, setMessagesByRoom] = useState<Record<string, Chat[]>>({});
 
   const handleListRooms = useCallback((response: Response) => {
@@ -25,6 +26,8 @@ export function App({ socket }: AppProps) {
   useEffect(() => {
     listRoomsRequest({ type: "list_rooms" });
   }, [listRoomsRequest]);
+
+  const sendMessageRequest = useWsRequest(socket, undefined);
 
   const onMessageSent = (content: string) => {
     const chat: Chat = { content, user: { name: "You" } };
@@ -39,13 +42,21 @@ export function App({ socket }: AppProps) {
     }));
 
     const chatRequest: Request = { type: "chat", message: content, room_id: roomID };
-    listRoomsRequest(chatRequest);
+    sendMessageRequest(chatRequest);
+  };
+
+  const joinRoomRequest = useWsRequest(socket, undefined); // TODO : add callback
+  const joinRoom = (roomID: RoomSummary["id"]) => {
+    const request: Request = { type: "join_room", room_id: roomID };
+    joinRoomRequest(request);
+    setRoomID(roomID);
+    setJoinedRooms((prev) => new Set(prev).add(roomID));
   };
 
   return (
     <>
       {roomID ? <ChatPanel messages={messagesByRoom[roomID] ?? []} onMessageSent={onMessageSent} /> : <EmptyChat />}
-      <Rooms roomID={roomID} rooms={rooms} setRoomID={setRoomID} />
+      <Rooms roomID={roomID} rooms={rooms} joinedRooms={joinedRooms} setRoomID={setRoomID} joinRoom={joinRoom} />
     </>
   );
 }

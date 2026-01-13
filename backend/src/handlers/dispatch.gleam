@@ -32,6 +32,7 @@ pub fn handle_request(
   state: session.Session,
   req: request.Request,
 ) -> #(session.Session, Option(reply.Reply)) {
+  echo req as "request"
   case req {
     request.Chat(content, room_id) ->
       chat.handle(entry, state, content, room_id)

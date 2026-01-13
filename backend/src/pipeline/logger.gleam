@@ -13,7 +13,7 @@ fn handle(
   _state: State,
   msg: envelope.Envelope,
 ) -> actor.Next(State, envelope.Envelope) {
-  echo msg as ""
+  echo msg as "message"
   actor.continue(Logger)
 }
 
