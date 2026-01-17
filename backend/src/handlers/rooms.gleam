@@ -1,6 +1,5 @@
 //// Room list and join handling.
 
-import domain/chat
 import domain/response
 import domain/session
 import gleam/list
@@ -23,7 +22,6 @@ pub fn join_room(
   state: session.Session,
   room_id: String,
 ) -> #(session.Session, reply.Reply) {
-  use _token, _name <- try_authentication(state)
   use inbox <- try(state, state.inbox, "no inbox available")
   use room_handle <- try(
     state,
@@ -55,18 +53,5 @@ fn try(
   case v {
     option.None -> #(state, reply.Response(response.JoinRoom(Error(msg))))
     option.Some(inbox) -> success(inbox)
-  }
-}
-
-fn try_authentication(
-  state: session.Session,
-  success: fn(String, String) -> #(session.Session, reply.Reply),
-) -> #(session.Session, reply.Reply) {
-  case state.user {
-    chat.Unknown -> #(
-      state,
-      reply.Response(response.JoinRoom(Error("unauthenticated"))),
-    )
-    chat.User(token:, name:) -> success(token, name)
   }
 }

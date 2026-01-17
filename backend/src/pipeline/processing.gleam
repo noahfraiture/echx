@@ -1,7 +1,7 @@
 //// Processing stage: forwards events to listeners.
 
 import gleam/erlang/process.{type Subject}
-import gleam/option.{None, Some}
+import gleam/option.{Some}
 import gleam/otp/actor
 import pipeline/envelope
 import pipeline/stage

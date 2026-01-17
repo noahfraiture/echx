@@ -52,6 +52,7 @@ fn server_message_json(message: response.Response) -> json.Json {
         #("type", json.string("error")),
         #("message", json.string(message)),
       ])
+    response.Success -> todo
   }
 }
 

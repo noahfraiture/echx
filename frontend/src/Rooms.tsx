@@ -39,22 +39,33 @@ export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: Rooms
                 >
                   <button
                     type="button"
-                    onClick={() => (isActive ? setRoomID("") : setRoomID(room.id))}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => {
+                      if (isActive) {
+                        setRoomID("");
+                        return;
+                      }
+                      if (isJoined) {
+                        setRoomID(room.id);
+                      }
+                    }}
+                    className={[
+                      "flex min-w-0 flex-1 items-center justify-between gap-3 text-left",
+                      isJoined || isActive ? "cursor-pointer" : "cursor-not-allowed",
+                    ].join(" ")}
                   >
-                    <span
-                      className={[
-                        "h-2.5 w-2.5 rounded-full",
-                        isActive
-                          ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]"
-                          : isJoined
-                            ? "bg-success shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"
-                            : "bg-base-300",
-                      ].join(" ")}
-                    />
-                    <span className="truncate">{room.name}</span>
-                  </button>
-                  <div className="flex items-center gap-2">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span
+                        className={[
+                          "h-2.5 w-2.5 rounded-full",
+                          isActive
+                            ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]"
+                            : isJoined
+                              ? "bg-success shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"
+                              : "bg-base-300",
+                        ].join(" ")}
+                      />
+                      <span className="truncate">{room.name}</span>
+                    </span>
                     <span
                       className={[
                         "badge badge-xs uppercase tracking-wide",
@@ -67,15 +78,15 @@ export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: Rooms
                     >
                       {isActive ? "selected" : isJoined ? "joined" : "open"}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => joinRoom(room.id)}
-                      disabled={isJoined}
-                      className="btn btn-xs rounded-full border-base-300 bg-base-100 text-base-content shadow-sm hover:border-primary/40 hover:bg-primary/10 disabled:opacity-60"
-                    >
-                      Join
-                    </button>
-                  </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => joinRoom(room.id)}
+                    disabled={isJoined}
+                    className="btn btn-xs rounded-full border-base-300 bg-base-100 text-base-content shadow-sm hover:border-primary/40 hover:bg-primary/10 disabled:opacity-60"
+                  >
+                    Join
+                  </button>
                 </div>
               );
             })}

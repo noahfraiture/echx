@@ -8,6 +8,7 @@ pub type Response {
   ErrorMsg(message: String)
   ListRooms(rooms: List(RoomSummary))
   JoinRoom(result: Result(Nil, String))
+  Success
 }
 
 pub type RoomSummary {

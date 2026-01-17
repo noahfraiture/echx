@@ -44,7 +44,7 @@ pub fn handle_request_connect_sets_user_test() {
     )
 
   let assert chat.User(token: "token", name: "Neo") = next_state.user
-  assert reply == None
+  assert reply == reply.Response(response.Success)
 }
 
 pub fn handle_requests_collects_replies_test() {

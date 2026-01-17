@@ -49,6 +49,7 @@ fn handle_request(
     }
     Publish(chat) -> {
       broadcast(state, chat)
+      echo chat as "publish"
       actor.continue(Room(..state, msg: [chat, ..state.msg]))
     }
   }
