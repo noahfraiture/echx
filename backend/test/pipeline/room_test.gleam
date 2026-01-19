@@ -3,13 +3,14 @@ import domain/response
 import gleam/erlang/process
 import gleam/otp/actor
 import gleam/time/timestamp
-import room
+import pipeline/room
 
 fn sample_chat(content: String) -> chat.Chat {
   chat.Chat(
     content,
     chat.User(token: "user-token", name: "user"),
     timestamp.from_unix_seconds(0),
+    "msg-" <> content,
   )
 }
 
@@ -30,11 +31,13 @@ pub fn join_deduplicates_members_test() {
   let assert Ok(response.RoomEvent(chat: first)) =
     process.receive(inbox, within: 50)
   assert first.content == "hello"
+  assert first.message_id == "msg-hello"
   assert Error(Nil) == process.receive(inbox, within: 20)
 
   let assert Ok(response.RoomEvent(chat: second)) =
     process.receive(other, within: 50)
   assert second.content == "hello"
+  assert second.message_id == "msg-hello"
 }
 
 pub fn publish_sends_to_all_members_test() {
@@ -55,7 +58,9 @@ pub fn publish_sends_to_all_members_test() {
     process.receive(bob, within: 50)
 
   assert alice_msg.content == "hi all"
+  assert alice_msg.message_id == "msg-hi all"
   assert bob_msg.content == "hi all"
+  assert bob_msg.message_id == "msg-hi all"
 }
 
 pub fn publish_is_noop_when_empty_test() {

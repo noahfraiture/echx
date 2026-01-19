@@ -3,9 +3,7 @@ import domain/response
 import domain/session
 import gleam/erlang/process
 import gleam/list
-import gleam/option.{None}
 import gleam/otp/actor
-import handlers/reply
 import pipeline/envelope
 import room_registry
 import transport/websocket
@@ -31,7 +29,7 @@ pub fn list_rooms_payload_returns_reply_test() {
     session.Session(
       registry: registry,
       user: chat.User(token: "token", name: "Neo"),
-      inbox: None,
+      inbox: process.new_subject(),
       rooms: [],
     )
 
@@ -39,7 +37,7 @@ pub fn list_rooms_payload_returns_reply_test() {
     websocket.handle_payload(entry, state, "{\"type\":\"list_rooms\"}")
 
   assert next_state.user == state.user
-  let assert [reply.Response(response.ListRooms(_))] = replies
+  let assert [response.ListRooms(_)] = replies
 }
 
 pub fn chat_payload_sends_pipeline_message_test() {
@@ -49,7 +47,7 @@ pub fn chat_payload_sends_pipeline_message_test() {
     session.Session(
       registry: registry,
       user: chat.User(token: "token", name: "Neo"),
-      inbox: None,
+      inbox: process.new_subject(),
       rooms: [],
     )
 
@@ -57,17 +55,18 @@ pub fn chat_payload_sends_pipeline_message_test() {
     websocket.handle_payload(
       entry,
       state,
-      "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"}",
+      "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\",\"message_id\":\"msg-1\"}",
     )
 
   assert next_state.user == state.user
-  assert replies == []
+  let assert [response.Success] = replies
 
   let assert Ok(envelope.Event(envelope.Chat(
-    chat.Chat(content: content, ..),
+    chat.Chat(content: content, message_id: message_id, ..),
     "lobby",
   ))) = process.receive(entry, within: 50)
   assert content == "hi"
+  assert message_id == "msg-1"
 }
 
 pub fn invalid_json_returns_no_reply_test() {
@@ -77,7 +76,7 @@ pub fn invalid_json_returns_no_reply_test() {
     session.Session(
       registry: registry,
       user: chat.User(token: "token", name: "Neo"),
-      inbox: None,
+      inbox: process.new_subject(),
       rooms: [],
     )
 

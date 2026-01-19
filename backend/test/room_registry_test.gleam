@@ -3,7 +3,7 @@ import gleam/erlang/process
 import gleam/list
 import gleam/option
 import gleam/otp/actor
-import room
+import pipeline/room
 import room_registry
 
 pub fn list_rooms_empty_by_default_test() {

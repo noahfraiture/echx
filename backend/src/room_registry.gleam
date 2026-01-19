@@ -6,7 +6,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/otp/actor
-import room
+import pipeline/room
 
 /// Hub where rooms are registered
 type RoomRegistry {

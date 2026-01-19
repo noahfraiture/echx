@@ -52,7 +52,10 @@ fn server_message_json(message: response.Response) -> json.Json {
         #("type", json.string("error")),
         #("message", json.string(message)),
       ])
-    response.Success -> todo
+    response.Success ->
+      json.object([
+        #("type", json.string("success")),
+      ])
   }
 }
 
@@ -62,6 +65,7 @@ fn chat_json(chat: chat.Chat) -> json.Json {
 
   json.object([
     #("content", json.string(chat.content)),
+    #("message_id", json.string(chat.message_id)),
     #(
       "user",
       json.object([

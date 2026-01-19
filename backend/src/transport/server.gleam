@@ -1,4 +1,4 @@
-//// HTTP server wiring for REST and WebSocket.
+//// WebSocket server wiring.
 
 import domain/chat
 import domain/session
@@ -6,14 +6,12 @@ import gleam/bytes_tree
 import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
-import gleam/io
-import gleam/option.{None, Some}
+import gleam/option.{Some}
 import gleam/string
 import logging
 import mist.{type ResponseData}
 import pipeline/envelope
 import room_registry
-import transport/rest
 import transport/websocket
 
 pub fn new(
@@ -30,33 +28,21 @@ pub fn new(
         ["ws"] ->
           mist.websocket(
             request: req,
-            on_init: fn(conn) {
+            on_init: fn(_conn) {
+              let #(inbox, selector) = websocket.inbox()
               #(
                 session.Session(
                   registry:,
                   user: chat.Unknown,
-                  inbox: Some(websocket.start_inbox(conn)),
+                  inbox: inbox,
                   rooms: [],
                 ),
-                None,
+                Some(selector),
               )
             },
-            on_close: fn(_state) { io.println("goodbye!") },
+            on_close: fn(_state) { Nil },
             handler: websocket.handler(entry),
           )
-        ["ping"] ->
-          response.new(200)
-          |> response.set_body(mist.Bytes(bytes_tree.from_string("pong")))
-
-        ["api", "public", ..] -> {
-          todo
-        }
-
-        ["api", ..path] ->
-          rest.authenticate(rest.new_context(registry), req, fn(ctx) {
-            rest.handle(ctx, req, path, entry)
-          })
-
         _ ->
           response.new(404)
           |> response.set_body(mist.Bytes(bytes_tree.new()))

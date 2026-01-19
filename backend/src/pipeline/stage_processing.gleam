@@ -4,8 +4,8 @@ import gleam/erlang/process.{type Subject}
 import gleam/option.{Some}
 import gleam/otp/actor
 import pipeline/envelope
+import pipeline/room
 import pipeline/stage
-import room
 import room_registry
 
 pub type State {

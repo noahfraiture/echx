@@ -6,22 +6,27 @@ import domain/session
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
 import gleam/time/timestamp
-import handlers/reply
 import pipeline/envelope
 
 pub fn handle(
-  entry: Subject(envelope.Envelope),
+  pipeline: Subject(envelope.Envelope),
   state: session.Session,
   content: String,
   room_id: String,
-) -> #(session.Session, reply.Reply) {
-  use user <- reply.try_authentication(state)
+  message_id: String,
+) -> #(session.Session, response.Response) {
+  let user = state.user
   actor.send(
-    entry,
+    pipeline,
     envelope.Event(envelope.Chat(
-      chat.Chat(content:, user:, timestamp: timestamp.system_time()),
+      chat.Chat(
+        content:,
+        user: user,
+        timestamp: timestamp.system_time(),
+        message_id:,
+      ),
       room_id,
     )),
   )
-  #(state, reply.Response(response.Success))
+  #(state, response.Success)
 }

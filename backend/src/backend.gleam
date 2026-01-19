@@ -2,9 +2,9 @@
 
 import gleam/erlang/process
 import logging
-import pipeline/logger
-import pipeline/processing
-import pipeline/validation
+import pipeline/stage_logger
+import pipeline/stage_processing
+import pipeline/stage_validation
 import room_registry
 import transport/server
 
@@ -17,9 +17,9 @@ pub fn main() {
   let assert Ok(_) = room_registry.new_room(registry, "programming")
   let assert Ok(_) = room_registry.new_room(registry, "cinema")
 
-  let assert Ok(validator) = validation.start([])
-  let assert Ok(_processor) = processing.start([validator], registry)
-  let assert Ok(_logger) = logger.start([validator])
+  let assert Ok(validator) = stage_validation.start([])
+  let assert Ok(_processor) = stage_processing.start([validator], registry)
+  let assert Ok(_logger) = stage_logger.start([validator])
 
   let assert Ok(_) = server.new(registry, validator)
 

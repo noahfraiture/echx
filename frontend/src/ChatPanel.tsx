@@ -1,8 +1,15 @@
 import { useState } from "react";
 import type { Chat } from "./api/types";
 
+type MessageStatus = "pending" | "confirmed" | "error";
+
+export type ChatMessage = {
+  chat: Chat;
+  status: MessageStatus;
+};
+
 type ChatPanelProps = {
-  messages: Chat[];
+  messages: ChatMessage[];
   onMessageSent: (message: string) => void;
 };
 
@@ -14,16 +21,27 @@ export function ChatPanel({ messages, onMessageSent }: ChatPanelProps) {
       <div className="h-full w-full p-4 flex flex-col">
         <h2 className="text-lg font-semibold">Chat</h2>
         <div className="space-y-3 overflow-y-auto flex-1">
-          {messages.map((message, index) => (
-            <div className="chat chat-start" key={`${message.user.name ?? "unknown"}-${index}`}>
-              <div className="chat-header">
-                {message.user.name ?? "Anonymous"}
-                <time className="text-xs opacity-50">2 hours ago</time>
+          {messages.map((message) => {
+            const bubbleClass =
+              message.status === "pending"
+                ? "chat-bubble opacity-60"
+                : message.status === "error"
+                  ? "chat-bubble border border-error"
+                  : "chat-bubble";
+
+            return (
+              <div className="chat chat-start" key={message.chat.message_id}>
+                <div className="chat-header">
+                  {message.chat.user.name ?? "Anonymous"}
+                  <time className="text-xs opacity-50">2 hours ago</time>
+                </div>
+                <div className={bubbleClass}>{message.chat.content}</div>
+                {message.status === "error" ? (
+                  <div className="text-xs text-error mt-1">Delivery failed</div>
+                ) : null}
               </div>
-              <div className="chat-bubble">{message.content}</div>
-              <div className="chat-footer opacity-50">{index % 2 === 0 ? "Seen" : "Delivered"}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <form
           className="mt-3"
