@@ -8,9 +8,11 @@ import { type Request } from "./api/types";
 
 type AppProps = {
   socket: WebSocket | null;
+  token: string;
+  userName: string;
 };
 
-export function App({ socket }: AppProps) {
+export function App({ socket, token, userName }: AppProps) {
   const [roomID, setRoomID] = useState<string>("");
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set());
@@ -27,10 +29,19 @@ export function App({ socket }: AppProps) {
     listRoomsRequest({ type: "list_rooms" });
   }, [listRoomsRequest]);
 
+  const connectRequest = useWsRequest(socket, undefined);
+  useEffect(() => {
+    if (!token || !userName) {
+      return;
+    }
+
+    connectRequest({ type: "connect", token, name: userName });
+  }, [connectRequest, token, userName]);
+
   const sendMessageRequest = useWsRequest(socket, undefined);
 
   const onMessageSent = (content: string) => {
-    const chat: Chat = { content, user: { name: "You" } };
+    const chat: Chat = { content, user: { name: userName } };
 
     if (!roomID) {
       return;
