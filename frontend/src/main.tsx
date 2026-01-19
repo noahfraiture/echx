@@ -16,6 +16,8 @@ const queryClient = new QueryClient();
 
 export function Main() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [token, setToken] = useState<string>(() => readStoredToken());
+  const [userName, setUserName] = useState<string>(() => readStoredName());
 
   useEffect(() => {
     const nextSocket = new WebSocket(resolveWebSocketUrl());
@@ -33,12 +35,20 @@ export function Main() {
     };
   }, []);
 
+  useEffect(() => {
+    storeToken(token);
+  }, [token]);
+
+  useEffect(() => {
+    storeName(userName);
+  }, [userName]);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar />
+      <TopBar userName={userName} onRename={setUserName} />
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <QueryClientProvider client={queryClient}>
-          <App socket={socket} />
+          <App socket={socket} token={token} userName={userName} />
         </QueryClientProvider>
       </div>
     </div>
@@ -59,4 +69,38 @@ function resolveWebSocketUrl(): string {
   }
 
   return url.toString();
+}
+
+function readStoredToken(): string {
+  if (typeof window === "undefined") {
+    return "guest";
+  }
+  const stored = window.localStorage.getItem("echx_token");
+  if (stored) {
+    return stored;
+  }
+  const nextToken = window.crypto?.randomUUID?.() ?? `guest-${Date.now()}`;
+  window.localStorage.setItem("echx_token", nextToken);
+  return nextToken;
+}
+
+function readStoredName(): string {
+  if (typeof window === "undefined") {
+    return "Guest";
+  }
+  return window.localStorage.getItem("echx_name") ?? "Guest";
+}
+
+function storeToken(token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem("echx_token", token);
+}
+
+function storeName(name: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem("echx_name", name);
 }
