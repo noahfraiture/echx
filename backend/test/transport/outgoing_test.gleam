@@ -11,6 +11,7 @@ fn sample_chat(content: String) -> chat.Chat {
     content,
     chat.User("token-1", "Neo"),
     timestamp.from_unix_seconds(1),
+    "msg-" <> content,
   )
 }
 
@@ -21,7 +22,10 @@ pub fn encode_server_room_event_test() {
       |> decode.then(fn(content) {
         decode.at(["chat", "user", "name"], decode.string)
         |> decode.then(fn(name) {
-          decode.success(#(msg_type, #(content, name)))
+          decode.at(["chat", "message_id"], decode.string)
+          |> decode.then(fn(message_id) {
+            decode.success(#(msg_type, #(content, #(name, message_id))))
+          })
         })
       })
     })
@@ -29,7 +33,8 @@ pub fn encode_server_room_event_test() {
   let encoded =
     outgoing.encode_server_message(response.RoomEvent(sample_chat("hey")))
 
-  let assert Ok(#("room_event", #("hey", "Neo"))) = json.parse(encoded, decoder)
+  let assert Ok(#("room_event", #("hey", #("Neo", "msg-hey")))) =
+    json.parse(encoded, decoder)
 }
 
 pub fn encode_server_room_event_unknown_user_test() {
@@ -41,6 +46,7 @@ pub fn encode_server_room_event_unknown_user_test() {
         "hey",
         chat.Unknown,
         timestamp.from_unix_seconds(2),
+        "msg-hey",
       )),
     )
 
@@ -61,6 +67,7 @@ pub fn encode_server_room_event_timestamp_fields_test() {
         "time",
         chat.User("token-1", "Neo"),
         timestamp.from_unix_seconds(42),
+        "msg-time",
       )),
     )
 
@@ -82,6 +89,7 @@ pub fn encode_server_room_event_includes_user_name_only_test() {
         "hello",
         chat.User("secret-token", "Neo"),
         timestamp.from_unix_seconds(1),
+        "msg-hello",
       )),
     )
 
@@ -109,8 +117,10 @@ pub fn encode_server_list_rooms_test() {
         decode.list(
           decode.field("id", decode.string, fn(id) {
             decode.field("name", decode.string, fn(name) {
-              decode.field("joined", decode.bool, fn(joined) {
-                decode.success(#(id, #(name, joined)))
+              decode.field("max_size", decode.int, fn(max_size) {
+                decode.field("current_size", decode.int, fn(current_size) {
+                  decode.success(#(id, #(name, #(max_size, current_size))))
+                })
               })
             })
           }),
@@ -122,16 +132,27 @@ pub fn encode_server_list_rooms_test() {
   let encoded =
     outgoing.encode_server_message(
       response.ListRooms([
-        response.RoomSummary(id: "lobby", name: "Lobby", joined: True),
-        response.RoomSummary(id: "games", name: "Games", joined: False),
+        response.RoomSummary(
+          id: "lobby",
+          name: "Lobby",
+          max_size: 2,
+          current_size: 0,
+        ),
+        response.RoomSummary(
+          id: "games",
+          name: "Games",
+          max_size: 2,
+          current_size: 0,
+        ),
       ]),
     )
 
   let assert Ok(#("list_rooms", rooms)) = json.parse(encoded, decoder)
-  assert rooms == [
-    #("lobby", #("Lobby", True)),
-    #("games", #("Games", False)),
-  ]
+  assert rooms
+    == [
+      #("lobby", #("Lobby", #(2, 0))),
+      #("games", #("Games", #(2, 0))),
+    ]
 }
 
 pub fn encode_server_join_room_ok_test() {
@@ -144,8 +165,7 @@ pub fn encode_server_join_room_ok_test() {
       })
     })
 
-  let encoded =
-    outgoing.encode_server_message(response.JoinRoom(Ok(Nil)))
+  let encoded = outgoing.encode_server_message(response.JoinRoom(Ok(Nil)))
 
   let assert Ok(#("join_room", #("ok", None))) = json.parse(encoded, decoder)
 }
@@ -161,9 +181,7 @@ pub fn encode_server_join_room_error_test() {
     })
 
   let encoded =
-    outgoing.encode_server_message(
-      response.JoinRoom(Error("room not found")),
-    )
+    outgoing.encode_server_message(response.JoinRoom(Error("room not found")))
 
   let assert Ok(#("join_room", #("error", "room not found"))) =
     json.parse(encoded, decoder)

@@ -8,6 +8,14 @@ type RoomsProps = {
   joinRoom: (roomID: RoomSummary["id"]) => void;
 };
 
+export function formatRoomSize(room: RoomSummary): string | null {
+  if (typeof room.current_size !== "number" || typeof room.max_size !== "number") {
+    return null;
+  }
+
+  return `${room.current_size}/${room.max_size}`;
+}
+
 export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: RoomsProps) {
   return (
     <div className="w-72 p-4">
@@ -39,43 +47,61 @@ export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: Rooms
                 >
                   <button
                     type="button"
-                    onClick={() => (isActive ? setRoomID("") : setRoomID(room.id))}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => {
+                      if (isActive) {
+                        setRoomID("");
+                        return;
+                      }
+                      if (isJoined) {
+                        setRoomID(room.id);
+                      }
+                    }}
+                    className={[
+                      "flex min-w-0 flex-1 items-center justify-between gap-3 text-left",
+                      isJoined || isActive ? "cursor-pointer" : "cursor-not-allowed",
+                    ].join(" ")}
                   >
-                    <span
-                      className={[
-                        "h-2.5 w-2.5 rounded-full",
-                        isActive
-                          ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]"
-                          : isJoined
-                            ? "bg-success shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"
-                            : "bg-base-300",
-                      ].join(" ")}
-                    />
-                    <span className="truncate">{room.name}</span>
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={[
-                        "badge badge-xs uppercase tracking-wide",
-                        isActive
-                          ? "badge-primary text-primary-content"
-                          : isJoined
-                            ? "badge-success text-success-content"
-                            : "badge-ghost",
-                      ].join(" ")}
-                    >
-                      {isActive ? "selected" : isJoined ? "joined" : "open"}
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span
+                        className={[
+                          "h-2.5 w-2.5 rounded-full",
+                          isActive
+                            ? "bg-primary shadow-[0_0_0_4px_rgba(0,0,0,0.06)]"
+                            : isJoined
+                              ? "bg-success shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"
+                              : "bg-base-300",
+                        ].join(" ")}
+                      />
+                      <span className="truncate">{room.name}</span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => joinRoom(room.id)}
-                      disabled={isJoined}
-                      className="btn btn-xs rounded-full border-base-300 bg-base-100 text-base-content shadow-sm hover:border-primary/40 hover:bg-primary/10 disabled:opacity-60"
-                    >
-                      Join
-                    </button>
-                  </div>
+                    <span className="flex items-center gap-2">
+                      {formatRoomSize(room) ? (
+                        <span className="text-[0.65rem] font-semibold text-base-content/60">
+                          {formatRoomSize(room)}
+                        </span>
+                      ) : null}
+                      <span
+                        className={[
+                          "badge badge-xs uppercase tracking-wide",
+                          isActive
+                            ? "badge-primary text-primary-content"
+                            : isJoined
+                              ? "badge-success text-success-content"
+                              : "badge-ghost",
+                        ].join(" ")}
+                      >
+                        {isActive ? "selected" : isJoined ? "joined" : "open"}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => joinRoom(room.id)}
+                    disabled={isJoined}
+                    className="btn btn-xs rounded-full border-base-300 bg-base-100 text-base-content shadow-sm hover:border-primary/40 hover:bg-primary/10 disabled:opacity-60"
+                  >
+                    Join
+                  </button>
                 </div>
               );
             })}

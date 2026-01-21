@@ -8,9 +8,11 @@ pub type Response {
   ErrorMsg(message: String)
   ListRooms(rooms: List(RoomSummary))
   JoinRoom(result: Result(Nil, String))
+  SlowModeUpdate(interval_ms: Int)
+  SlowModeRejected(room_id: String, retry_after_ms: Int)
+  Success
 }
 
 pub type RoomSummary {
-  /// `joined` is only meaningful for WebSocket clients.
-  RoomSummary(id: String, name: String, joined: Bool)
+  RoomSummary(id: String, name: String, max_size: Int, current_size: Int)
 }

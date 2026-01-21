@@ -27,7 +27,8 @@ fn server_message_json(message: response.Response) -> json.Json {
             json.object([
               #("id", json.string(room.id)),
               #("name", json.string(room.name)),
-              #("joined", json.bool(room.joined)),
+              #("max_size", json.int(room.max_size)),
+              #("current_size", json.int(room.current_size)),
             ])
           }),
         ),
@@ -52,6 +53,12 @@ fn server_message_json(message: response.Response) -> json.Json {
         #("type", json.string("error")),
         #("message", json.string(message)),
       ])
+    response.Success ->
+      json.object([
+        #("type", json.string("success")),
+      ])
+    response.SlowModeRejected(room_id:, retry_after_ms:) -> todo
+    response.SlowModeUpdate(interval_ms:) -> todo
   }
 }
 
@@ -61,6 +68,7 @@ fn chat_json(chat: chat.Chat) -> json.Json {
 
   json.object([
     #("content", json.string(chat.content)),
+    #("message_id", json.string(chat.message_id)),
     #(
       "user",
       json.object([

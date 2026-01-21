@@ -2,16 +2,17 @@ import domain/request
 import transport/incoming
 
 pub fn decode_client_messages_single_object_test() {
-  let payload = "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"}"
-  let assert Ok([request.Chat("hi", "lobby")]) =
+  let payload =
+    "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\",\"message_id\":\"msg-1\"}"
+  let assert Ok([request.Chat("hi", "lobby", "msg-1")]) =
     incoming.decode_client_messages(payload)
 }
 
 pub fn decode_client_messages_list_test() {
   let payload =
-    "[{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"},{\"type\":\"connect\",\"token\":\"token-1\",\"name\":\"Neo\"}]"
+    "[{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\",\"message_id\":\"msg-2\"},{\"type\":\"connect\",\"token\":\"token-1\",\"name\":\"Neo\"}]"
   let assert Ok([
-    request.Chat("hi", "lobby"),
+    request.Chat("hi", "lobby", "msg-2"),
     request.Connect(token: "token-1", name: "Neo"),
   ]) = incoming.decode_client_messages(payload)
 }
@@ -28,6 +29,11 @@ pub fn decode_client_messages_list_with_invalid_entry_test() {
 
 pub fn decode_client_chat_message_missing_body_test() {
   let payload = "{\"type\":\"chat\"}"
+  let assert Error(_) = incoming.decode_client_messages(payload)
+}
+
+pub fn decode_client_chat_message_missing_message_id_test() {
+  let payload = "{\"type\":\"chat\",\"message\":\"hi\",\"room_id\":\"lobby\"}"
   let assert Error(_) = incoming.decode_client_messages(payload)
 }
 

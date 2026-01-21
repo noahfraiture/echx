@@ -4,10 +4,9 @@ import domain/response
 import domain/session
 import gleam/erlang/process
 import gleam/list
-import gleam/option.{None}
+
 import gleam/otp/actor
 import handlers/dispatch
-import handlers/reply
 import pipeline/envelope
 import room_registry
 
@@ -19,7 +18,7 @@ fn setup_registry(
   |> list.each(fn(name) {
     let assert Ok(_) =
       actor.call(registry, 50, fn(reply_to) {
-        room_registry.CreateRoom(reply_to, name)
+        room_registry.CreateRoom(reply_to, name, 3)
       })
   })
   registry
@@ -32,7 +31,7 @@ pub fn handle_request_connect_sets_user_test() {
     session.Session(
       registry: registry,
       user: chat.Unknown,
-      inbox: None,
+      inbox: process.new_subject(),
       rooms: [],
     )
 
@@ -44,7 +43,7 @@ pub fn handle_request_connect_sets_user_test() {
     )
 
   let assert chat.User(token: "token", name: "Neo") = next_state.user
-  assert reply == None
+  assert reply == response.Success
 }
 
 pub fn handle_requests_collects_replies_test() {
@@ -54,7 +53,7 @@ pub fn handle_requests_collects_replies_test() {
     session.Session(
       registry: registry,
       user: chat.User(token: "token", name: "Neo"),
-      inbox: None,
+      inbox: process.new_subject(),
       rooms: [],
     )
 
@@ -62,7 +61,7 @@ pub fn handle_requests_collects_replies_test() {
     dispatch.handle_requests(entry, state, [request.ListRooms])
 
   assert next_state.user == state.user
-  let assert [reply.Response(response.ListRooms(_))] = replies
+  let assert [response.ListRooms(_)] = replies
 }
 
 pub fn handle_requests_chat_has_no_reply_test() {
@@ -72,19 +71,20 @@ pub fn handle_requests_chat_has_no_reply_test() {
     session.Session(
       registry: registry,
       user: chat.User(token: "token", name: "Neo"),
-      inbox: None,
+      inbox: process.new_subject(),
       rooms: [],
     )
 
   let #(next_state, replies) =
-    dispatch.handle_requests(entry, state, [request.Chat("hello", "")])
+    dispatch.handle_requests(entry, state, [request.Chat("hello", "", "msg-1")])
 
   assert next_state.user == state.user
-  assert replies == []
+  let assert [response.Success] = replies
 
   let assert Ok(envelope.Event(envelope.Chat(
-    chat.Chat(content: content, ..),
+    chat.Chat(content: content, message_id: message_id, ..),
     "",
   ))) = process.receive(entry, within: 50)
   assert content == "hello"
+  assert message_id == "msg-1"
 }
