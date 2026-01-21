@@ -29,11 +29,12 @@ fn handle(
       let summaries =
         dict.values(rooms)
         |> list.map(fn(handle: room.RoomHandle) {
+          let details = actor.call(handle.command, 1000, room.Details)
           response.RoomSummary(
             id: handle.id,
             name: handle.name,
-            max_size: handle.max_size,
-            current_size: handle.current_size,
+            max_size: details.max_size,
+            current_size: details.current_size,
           )
         })
       actor.send(reply_to, summaries)

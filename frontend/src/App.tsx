@@ -96,6 +96,49 @@ export function App({ socket }: AppProps) {
   }, [isConnected, listRoomsRequest]);
 
   useEffect(() => {
+    if (!isConnected) {
+      return;
+    }
+
+    let pollTimer: number | null = null;
+
+    const startPolling = () => {
+      if (document.visibilityState !== "visible" || pollTimer !== null) {
+        return;
+      }
+
+      pollTimer = window.setInterval(() => {
+        if (document.visibilityState === "visible") {
+          listRoomsRequest({ type: "list_rooms" });
+        }
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (pollTimer !== null) {
+        window.clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isConnected, listRoomsRequest]);
+
+  useEffect(() => {
     return () => {
       pendingTimers.current.forEach((timer) => window.clearTimeout(timer));
       pendingTimers.current.clear();
@@ -155,6 +198,15 @@ export function App({ socket }: AppProps) {
     joinRoomRequest(request);
     setRoomID(roomID);
     setJoinedRooms((prev) => new Set(prev).add(roomID));
+    setRooms((prev) =>
+      prev.map((room) => {
+        if (room.id !== roomID) {
+          return room;
+        }
+        const currentSize = typeof room.current_size === "number" ? room.current_size : 0;
+        return { ...room, current_size: currentSize + 1, joined: true };
+      }),
+    );
   };
 
   if (!isConnected) {

@@ -86,8 +86,6 @@ pub fn registry_returns_real_room_handles_test() {
     id: "lounge",
     name: "lounge",
     command: command,
-    max_size: 2,
-    current_size: 0,
   )) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.GetRoom(reply_to, "lounge")

@@ -11,18 +11,17 @@ import gleam/result
 import gleam/set
 
 pub type RoomHandle {
-  RoomHandle(
-    id: String,
-    name: String,
-    command: Subject(RoomCommand),
-    max_size: Int,
-    current_size: Int,
-  )
+  RoomHandle(id: String, name: String, command: Subject(RoomCommand))
 }
 
 pub type RoomCommand {
   Join(reply_to: Subject(response.Response), inbox: Subject(response.Response))
   Publish(chat: chat.Chat)
+  Details(reply_to: Subject(RoomDetail))
+}
+
+pub type RoomDetail {
+  RoomDetail(current_size: Int, max_size: Int)
 }
 
 pub fn start(
@@ -33,7 +32,7 @@ pub fn start(
   |> actor.on_message(handle_request)
   |> actor.start
   |> result.map(fn(a: actor.Started(Subject(RoomCommand))) {
-    RoomHandle(name, name, a.data, max_size, 0)
+    RoomHandle(name, name, a.data)
   })
 }
 
@@ -62,6 +61,16 @@ fn handle_request(
       broadcast(state, chat)
       echo chat as "publish"
       actor.continue(Room(..state, msg: [chat, ..state.msg]))
+    }
+    Details(reply_to:) -> {
+      actor.send(
+        reply_to,
+        RoomDetail(
+          current_size: set.size(state.clients),
+          max_size: state.max_size,
+        ),
+      )
+      actor.continue(state)
     }
   }
 }
