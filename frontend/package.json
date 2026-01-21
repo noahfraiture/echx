@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test:unit": "tsx --test src/**/*.test.ts",
     "test:integration": "tsx --test tests/integration/**/*.spec.ts"
   },
   "dependencies": {

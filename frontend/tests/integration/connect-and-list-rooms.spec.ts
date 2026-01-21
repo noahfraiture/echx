@@ -24,6 +24,16 @@ describe("websocket connect and list rooms", () => {
       for (const roomId of REQUIRED_ROOMS) {
         assert.ok(roomIds.includes(roomId));
       }
+
+      const roomsById = new Map(response.rooms.map((room) => [room.id, room]));
+      for (const roomId of REQUIRED_ROOMS) {
+        const room = roomsById.get(roomId);
+        assert.ok(room, `expected room ${roomId} in list`);
+        assert.equal(typeof room?.current_size, "number");
+        assert.equal(typeof room?.max_size, "number");
+        assert.ok((room?.current_size ?? 0) >= 0);
+        assert.ok((room?.max_size ?? 0) >= (room?.current_size ?? 0));
+      }
     } finally {
       await client.close();
     }

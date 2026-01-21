@@ -27,7 +27,6 @@ fn server_message_json(message: response.Response) -> json.Json {
             json.object([
               #("id", json.string(room.id)),
               #("name", json.string(room.name)),
-              #("joined", json.bool(room.joined)),
             ])
           }),
         ),
@@ -56,6 +55,8 @@ fn server_message_json(message: response.Response) -> json.Json {
       json.object([
         #("type", json.string("success")),
       ])
+    response.SlowModeRejected(room_id:, retry_after_ms:) -> todo
+    response.SlowModeUpdate(interval_ms:) -> todo
   }
 }
 

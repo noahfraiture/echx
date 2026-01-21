@@ -130,8 +130,18 @@ pub fn encode_server_list_rooms_test() {
   let encoded =
     outgoing.encode_server_message(
       response.ListRooms([
-        response.RoomSummary(id: "lobby", name: "Lobby", joined: True),
-        response.RoomSummary(id: "games", name: "Games", joined: False),
+        response.RoomSummary(
+          id: "lobby",
+          name: "Lobby",
+          max_size: 2,
+          current_size: 0,
+        ),
+        response.RoomSummary(
+          id: "games",
+          name: "Games",
+          max_size: 2,
+          current_size: 0,
+        ),
       ]),
     )
 

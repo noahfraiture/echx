@@ -15,15 +15,15 @@ fn sample_chat(content: String) -> chat.Chat {
 }
 
 pub fn join_deduplicates_members_test() {
-  let assert Ok(handle) = room.start("duplicates")
+  let assert Ok(handle) = room.start("duplicates", 3)
   let inbox = process.new_subject()
   let other = process.new_subject()
 
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, other) })
 
   actor.send(handle.command, room.Publish(sample_chat("hello")))
@@ -41,13 +41,13 @@ pub fn join_deduplicates_members_test() {
 }
 
 pub fn publish_sends_to_all_members_test() {
-  let assert Ok(handle) = room.start("broadcast")
+  let assert Ok(handle) = room.start("broadcast", 2)
   let alice = process.new_subject()
   let bob = process.new_subject()
 
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, alice) })
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, bob) })
 
   actor.send(handle.command, room.Publish(sample_chat("hi all")))
@@ -64,10 +64,10 @@ pub fn publish_sends_to_all_members_test() {
 }
 
 pub fn publish_is_noop_when_empty_test() {
-  let assert Ok(handle) = room.start("empty")
+  let assert Ok(handle) = room.start("empty", 2)
   actor.send(handle.command, room.Publish(sample_chat("still here")))
 
   let inbox = process.new_subject()
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
 }

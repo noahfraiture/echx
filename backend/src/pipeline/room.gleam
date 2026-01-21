@@ -71,7 +71,7 @@ fn try_size(
   reply_to: Subject(response.Response),
   space_left: fn() -> actor.Next(Room, RoomCommand),
 ) -> actor.Next(Room, RoomCommand) {
-  case state.max_size < set.size(state.clients) {
+  case state.max_size > set.size(state.clients) {
     True -> space_left()
     False -> {
       actor.send(reply_to, response.JoinRoom(Error("no space left")))

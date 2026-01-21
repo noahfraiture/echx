@@ -19,7 +19,7 @@ fn setup_registry(
   room_id: String,
 ) -> process.Subject(room_registry.RoomRegistryMsg) {
   let registry = room_registry.new()
-  let assert Ok(_) = room_registry.new_room(registry, room_id)
+  let assert Ok(_) = room_registry.new_room(registry, room_id, 3)
   registry
 }
 

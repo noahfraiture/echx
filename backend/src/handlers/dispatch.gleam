@@ -43,9 +43,7 @@ pub fn handle_request(
       #(next_state, reply_msg)
     }
     request.SetSlowMode(room_id, interval_ms) -> {
-      let #(next_state, reply_msg) =
-        rooms.set_slow_mode(state, room_id, interval_ms)
-      #(next_state, reply_msg)
+      todo
     }
   }
 }

@@ -19,30 +19,10 @@ fn setup_registry(
   |> list.each(fn(name) {
     let assert Ok(_) =
       actor.call(registry, 50, fn(reply_to) {
-        room_registry.CreateRoom(reply_to, name)
+        room_registry.CreateRoom(reply_to, name, 3)
       })
   })
   registry
-}
-
-pub fn list_rooms_marks_joined_test() {
-  let registry = setup_registry(["lobby", "games"])
-  let state =
-    session.Session(
-      registry: registry,
-      user: chat.User(token: "token", name: "Neo"),
-      inbox: process.new_subject(),
-      rooms: ["lobby"],
-    )
-
-  let reply = rooms_handler.list_rooms(state)
-  let assert response.ListRooms(rooms) = reply
-
-  let assert Ok(lobby) = list.find(rooms, fn(room) { room.id == "lobby" })
-  let assert Ok(games) = list.find(rooms, fn(room) { room.id == "games" })
-
-  assert lobby.joined == True
-  assert games.joined == False
 }
 
 pub fn join_room_requires_auth_test() {

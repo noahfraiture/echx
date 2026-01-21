@@ -8,6 +8,14 @@ type RoomsProps = {
   joinRoom: (roomID: RoomSummary["id"]) => void;
 };
 
+export function formatRoomSize(room: RoomSummary): string | null {
+  if (typeof room.current_size !== "number" || typeof room.max_size !== "number") {
+    return null;
+  }
+
+  return `${room.current_size}/${room.max_size}`;
+}
+
 export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: RoomsProps) {
   return (
     <div className="w-72 p-4">
@@ -66,17 +74,24 @@ export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: Rooms
                       />
                       <span className="truncate">{room.name}</span>
                     </span>
-                    <span
-                      className={[
-                        "badge badge-xs uppercase tracking-wide",
-                        isActive
-                          ? "badge-primary text-primary-content"
-                          : isJoined
-                            ? "badge-success text-success-content"
-                            : "badge-ghost",
-                      ].join(" ")}
-                    >
-                      {isActive ? "selected" : isJoined ? "joined" : "open"}
+                    <span className="flex items-center gap-2">
+                      {formatRoomSize(room) ? (
+                        <span className="text-[0.65rem] font-semibold text-base-content/60">
+                          {formatRoomSize(room)}
+                        </span>
+                      ) : null}
+                      <span
+                        className={[
+                          "badge badge-xs uppercase tracking-wide",
+                          isActive
+                            ? "badge-primary text-primary-content"
+                            : isJoined
+                              ? "badge-success text-success-content"
+                              : "badge-ghost",
+                        ].join(" ")}
+                      >
+                        {isActive ? "selected" : isJoined ? "joined" : "open"}
+                      </span>
                     </span>
                   </button>
                   <button

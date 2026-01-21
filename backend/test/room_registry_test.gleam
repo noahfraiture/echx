@@ -1,3 +1,4 @@
+import domain/response
 import gleam/dict
 import gleam/erlang/process
 import gleam/list
@@ -27,11 +28,11 @@ pub fn rooms_can_be_added_and_retrieved_test() {
   let registry = room_registry.new()
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.CreateRoom(reply_to, "alpha")
+      room_registry.CreateRoom(reply_to, "alpha", 2)
     })
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.CreateRoom(reply_to, "beta")
+      room_registry.CreateRoom(reply_to, "beta", 2)
     })
 
   let listed_summaries = actor.call(registry, 50, room_registry.ListRooms)
@@ -58,11 +59,11 @@ pub fn creating_a_room_twice_is_idempotent_test() {
   let registry = room_registry.new()
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.CreateRoom(reply_to, "alpha")
+      room_registry.CreateRoom(reply_to, "alpha", 2)
     })
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.CreateRoom(reply_to, "alpha")
+      room_registry.CreateRoom(reply_to, "alpha", 2)
     })
 
   let listed_summaries = actor.call(registry, 50, room_registry.ListRooms)
@@ -78,13 +79,15 @@ pub fn registry_returns_real_room_handles_test() {
   let registry = room_registry.new()
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
-      room_registry.CreateRoom(reply_to, "lounge")
+      room_registry.CreateRoom(reply_to, "lounge", 2)
     })
 
   let assert option.Some(room.RoomHandle(
     id: "lounge",
     name: "lounge",
     command: command,
+    max_size: 2,
+    current_size: 0,
   )) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.GetRoom(reply_to, "lounge")
@@ -92,6 +95,6 @@ pub fn registry_returns_real_room_handles_test() {
 
   // Use the returned handle to prove it is live.
   let inbox = process.new_subject()
-  let assert Ok(_) =
+  let assert response.JoinRoom(Ok(Nil)) =
     actor.call(command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
 }

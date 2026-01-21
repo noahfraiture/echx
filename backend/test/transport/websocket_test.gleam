@@ -16,7 +16,7 @@ fn setup_registry(
   |> list.each(fn(name) {
     let assert Ok(_) =
       actor.call(registry, 50, fn(reply_to) {
-        room_registry.CreateRoom(reply_to, name)
+        room_registry.CreateRoom(reply_to, name, 3)
       })
   })
   registry

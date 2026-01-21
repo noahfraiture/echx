@@ -18,6 +18,8 @@ export type RoomSummary = {
   id: string;
   name: string;
   joined: boolean;
+  max_size?: number | null;
+  current_size?: number | null;
 };
 
 export type Response =
