@@ -15,6 +15,8 @@ export function App({ socket }: AppProps) {
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set());
   const [messagesByRoom, setMessagesByRoom] = useState<Record<string, Chat[]>>({});
+  const [userName] = useState(() => createGuestName());
+  const [userToken] = useState(() => crypto.randomUUID());
 
   const handleListRooms = useCallback((response: Response) => {
     if (response.type === "list_rooms") {
@@ -28,9 +30,18 @@ export function App({ socket }: AppProps) {
   }, [listRoomsRequest]);
 
   const sendMessageRequest = useWsRequest(socket, undefined);
+  const connectRequest = useWsRequest(socket, undefined);
+
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    connectRequest({ type: "connect", token: userToken, name: userName });
+  }, [connectRequest, socket, userName, userToken]);
 
   const onMessageSent = (content: string) => {
-    const chat: Chat = { content, user: { name: "You" } };
+    const chat: Chat = { content, user: { name: userName } };
 
     if (!roomID) {
       return;
@@ -55,8 +66,25 @@ export function App({ socket }: AppProps) {
 
   return (
     <>
-      {roomID ? <ChatPanel messages={messagesByRoom[roomID] ?? []} onMessageSent={onMessageSent} /> : <EmptyChat />}
+      {roomID ? (
+        <ChatPanel
+          currentUserName={userName}
+          messages={messagesByRoom[roomID] ?? []}
+          onMessageSent={onMessageSent}
+        />
+      ) : (
+        <EmptyChat />
+      )}
       <Rooms roomID={roomID} rooms={rooms} joinedRooms={joinedRooms} setRoomID={setRoomID} joinRoom={joinRoom} />
     </>
   );
+}
+
+function createGuestName(): string {
+  const adjectives = ["Amber", "Brisk", "Golden", "Quiet", "Sandy", "Silver", "Sunny", "Velvet"];
+  const nouns = ["Comet", "Dawn", "Drift", "Ember", "Harbor", "Horizon", "Lumen", "Spark"];
+  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  const suffix = Math.floor(100 + Math.random() * 900);
+  return `${adjective}${noun}${suffix}`;
 }
