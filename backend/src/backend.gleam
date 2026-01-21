@@ -14,8 +14,8 @@ pub fn main() {
 
   let registry = room_registry.new()
 
-  let assert Ok(_) = room_registry.new_room(registry, "programming")
-  let assert Ok(_) = room_registry.new_room(registry, "cinema")
+  let assert Ok(_) = room_registry.new_room(registry, "programming", 5)
+  let assert Ok(_) = room_registry.new_room(registry, "cinema", 5)
 
   let assert Ok(validator) = stage_validation.start([])
   let assert Ok(_processor) = stage_processing.start([validator], registry)

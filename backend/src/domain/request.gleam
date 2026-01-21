@@ -6,4 +6,5 @@ pub type Request {
   Connect(token: String, name: String)
   ListRooms
   JoinRoom(room_id: String)
+  SetSlowMode(room_id: String, interval_ms: Int)
 }

@@ -16,7 +16,7 @@ type RoomRegistry {
 pub type RoomRegistryMsg {
   ListRooms(reply_to: Subject(List(response.RoomSummary)))
   GetRoom(reply_to: Subject(Option(room.RoomHandle)), id: String)
-  CreateRoom(reply_to: Subject(Result(Nil, Nil)), name: String)
+  CreateRoom(reply_to: Subject(Result(Nil, Nil)), name: String, max_user: Int)
 }
 
 fn handle(
@@ -29,7 +29,12 @@ fn handle(
       let summaries =
         dict.values(rooms)
         |> list.map(fn(handle: room.RoomHandle) {
-          response.RoomSummary(id: handle.id, name: handle.name, joined: False)
+          response.RoomSummary(
+            id: handle.id,
+            name: handle.name,
+            max_size: handle.max_size,
+            current_size: handle.current_size,
+          )
         })
       actor.send(reply_to, summaries)
       actor.continue(state)
@@ -38,25 +43,34 @@ fn handle(
       actor.send(reply_to, option.from_result(dict.get(rooms, id)))
       actor.continue(state)
     }
-    CreateRoom(reply_to:, name:) -> {
-      case dict.has_key(state.rooms, name) {
-        False -> {
-          case room.start(name) {
-            Error(_) -> {
-              actor.send(reply_to, Error(Nil))
-              actor.continue(state)
-            }
-            Ok(handle) -> {
-              actor.send(reply_to, Ok(Nil))
-              actor.continue(RoomRegistry(dict.insert(rooms, name, handle)))
-            }
-          }
-        }
-        True -> {
-          actor.send(reply_to, Ok(Nil))
+    CreateRoom(reply_to:, name:, max_user:) ->
+      handle_create_room(state, reply_to, name, max_user, rooms)
+  }
+}
+
+fn handle_create_room(
+  state: RoomRegistry,
+  reply_to: Subject(Result(Nil, Nil)),
+  name: String,
+  max_user: Int,
+  rooms: Dict(String, room.RoomHandle),
+) {
+  case dict.has_key(state.rooms, name) {
+    False -> {
+      case room.start(name, max_user) {
+        Error(_) -> {
+          actor.send(reply_to, Error(Nil))
           actor.continue(state)
         }
+        Ok(handle) -> {
+          actor.send(reply_to, Ok(Nil))
+          actor.continue(RoomRegistry(dict.insert(rooms, name, handle)))
+        }
       }
+    }
+    True -> {
+      actor.send(reply_to, Ok(Nil))
+      actor.continue(state)
     }
   }
 }
@@ -64,8 +78,9 @@ fn handle(
 pub fn new_room(
   registry: Subject(RoomRegistryMsg),
   name: String,
+  max_user: Int,
 ) -> Result(Nil, Nil) {
-  actor.call(registry, 1000, CreateRoom(_, name))
+  actor.call(registry, 1000, CreateRoom(_, name, max_user))
 }
 
 pub fn new() -> Subject(RoomRegistryMsg) {

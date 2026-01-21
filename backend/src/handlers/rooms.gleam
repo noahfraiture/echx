@@ -2,7 +2,6 @@
 
 import domain/response
 import domain/session
-import gleam/list
 import gleam/option
 import gleam/otp/actor
 import pipeline/room
@@ -10,10 +9,6 @@ import room_registry
 
 pub fn list_rooms(state: session.Session) -> response.Response {
   let rooms = actor.call(state.registry, 1000, room_registry.ListRooms)
-  let rooms =
-    list.map(rooms, fn(room: response.RoomSummary) {
-      response.RoomSummary(..room, joined: list.contains(state.rooms, room.id))
-    })
   response.ListRooms(rooms)
 }
 
@@ -32,11 +27,11 @@ pub fn join_room(
   let join_result =
     actor.call(room_handle.command, 1000, room.Join(_, state.inbox))
   case join_result {
-    Ok(_) -> {
+    response.Success -> {
       let next_state = session.Session(..state, rooms: [room_id, ..state.rooms])
       #(next_state, response.JoinRoom(Ok(Nil)))
     }
-    Error(_) -> #(state, response.JoinRoom(Error("join rejected")))
+    other -> #(state, other)
   }
 }
 
