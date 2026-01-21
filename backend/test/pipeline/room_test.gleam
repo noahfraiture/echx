@@ -19,11 +19,11 @@ pub fn join_deduplicates_members_test() {
   let inbox = process.new_subject()
   let other = process.new_subject()
 
-  let assert response.JoinRoom(Ok(Nil)) =
+  let assert response.Success =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
-  let assert response.JoinRoom(Ok(Nil)) =
+  let assert response.Success =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
-  let assert response.JoinRoom(Ok(Nil)) =
+  let assert response.Success =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, other) })
 
   actor.send(handle.command, room.Publish(sample_chat("hello")))
@@ -45,9 +45,9 @@ pub fn publish_sends_to_all_members_test() {
   let alice = process.new_subject()
   let bob = process.new_subject()
 
-  let assert response.JoinRoom(Ok(Nil)) =
+  let assert response.Success =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, alice) })
-  let assert response.JoinRoom(Ok(Nil)) =
+  let assert response.Success =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, bob) })
 
   actor.send(handle.command, room.Publish(sample_chat("hi all")))
@@ -68,6 +68,6 @@ pub fn publish_is_noop_when_empty_test() {
   actor.send(handle.command, room.Publish(sample_chat("still here")))
 
   let inbox = process.new_subject()
-  let assert response.JoinRoom(Ok(Nil)) =
+  let assert response.Success =
     actor.call(handle.command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
 }

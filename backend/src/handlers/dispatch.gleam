@@ -24,7 +24,7 @@ pub fn handle_requests(
 }
 
 pub fn handle_request(
-  entry: Subject(envelope.Envelope),
+  pipeline: Subject(envelope.Envelope),
   state: session.Session,
   req: request.Request,
 ) -> #(session.Session, response.Response) {
@@ -32,7 +32,7 @@ pub fn handle_request(
   use <- try_auth(state, req)
   case req {
     request.Chat(content, room_id, message_id) ->
-      chat.handle(entry, state, content, room_id, message_id)
+      chat.handle(pipeline, state, content, room_id, message_id)
     request.Connect(token:, name:) -> #(
       session_handler.connect(state, token, name),
       response.Success,

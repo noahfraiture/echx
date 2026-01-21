@@ -117,8 +117,10 @@ pub fn encode_server_list_rooms_test() {
         decode.list(
           decode.field("id", decode.string, fn(id) {
             decode.field("name", decode.string, fn(name) {
-              decode.field("joined", decode.bool, fn(joined) {
-                decode.success(#(id, #(name, joined)))
+              decode.field("max_size", decode.int, fn(max_size) {
+                decode.field("current_size", decode.int, fn(current_size) {
+                  decode.success(#(id, #(name, #(max_size, current_size))))
+                })
               })
             })
           }),
@@ -148,8 +150,8 @@ pub fn encode_server_list_rooms_test() {
   let assert Ok(#("list_rooms", rooms)) = json.parse(encoded, decoder)
   assert rooms
     == [
-      #("lobby", #("Lobby", True)),
-      #("games", #("Games", False)),
+      #("lobby", #("Lobby", #(2, 0))),
+      #("games", #("Games", #(2, 0))),
     ]
 }
 

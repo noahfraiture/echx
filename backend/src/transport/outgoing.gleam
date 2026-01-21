@@ -27,6 +27,8 @@ fn server_message_json(message: response.Response) -> json.Json {
             json.object([
               #("id", json.string(room.id)),
               #("name", json.string(room.name)),
+              #("max_size", json.int(room.max_size)),
+              #("current_size", json.int(room.current_size)),
             ])
           }),
         ),
