@@ -48,6 +48,7 @@ pub fn start(
     clients: set.new(),
     max_size: max_size,
     interval: duration.seconds(0),
+    last_sent: timestamp.unix_epoch,
   ))
   |> actor.on_message(handle_request)
   |> actor.start
@@ -67,6 +68,7 @@ type Room {
     clients: set.Set(Client),
     max_size: Int,
     interval: duration.Duration,
+    last_sent: timestamp.Timestamp,
   )
 }
 
@@ -91,8 +93,11 @@ fn handle_request(state: Room, msg: RoomCommand) -> RoomNext {
       // use <- try_size(state, reply_to)
       let Room(clients:, ..) = state
       let client = Client(inbox:, token:, last_sent: timestamp.unix_epoch)
+      let now = timestamp.system_time()
       actor.send(reply_to, response.Success)
-      actor.continue(Room(..state, clients: set.insert(clients, client)))
+      actor.continue(
+        Room(..state, clients: set.insert(clients, client), last_sent: now),
+      )
     }
     Publish(chat:) -> {
       // Auth has been enforced at dispatch
@@ -121,21 +126,17 @@ fn handle_request(state: Room, msg: RoomCommand) -> RoomNext {
             False -> c
           }
         })
-      actor.continue(Room(..state, msg: [chat, ..state.msg], clients:))
+      actor.continue(
+        Room(..state, msg: [chat, ..state.msg], clients:, last_sent: now),
+      )
     }
     Details(reply_to:) -> {
-      let last_sent =
-        state.clients
-        |> set.map(fn(c: Client) -> timestamp.Timestamp { c.last_sent })
-        |> set.to_list
-        |> list.max(timestamp.compare)
-        |> result.unwrap(timestamp.unix_epoch)
       actor.send(
         reply_to,
         RoomDetail(
           current_size: set.size(state.clients),
           max_size: state.max_size,
-          last_sent:,
+          last_sent: state.last_sent,
         ),
       )
       actor.continue(state)
