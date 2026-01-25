@@ -16,6 +16,8 @@ type RoomsProps = {
   createRoom: (name: string, maxSize: number) => void;
   createRoomStatus: CreateRoomStatus;
   resetCreateRoomStatus: () => void;
+  identity: { token: string; name: string };
+  renameSelf: (nextName: string) => void;
 };
 
 export function formatRoomSize(room: RoomSummary): string | null {
@@ -35,16 +37,22 @@ export function Rooms({
   createRoom,
   createRoomStatus,
   resetCreateRoomStatus,
+  identity,
+  renameSelf,
 }: RoomsProps) {
   const [showForm, setShowForm] = useState(false);
   const [roomName, setRoomName] = useState("");
   const [roomSize, setRoomSize] = useState("12");
+  const [pendingName, setPendingName] = useState(identity.name);
 
   const trimmedName = roomName.trim();
+  const trimmedRename = pendingName.trim();
   const parsedSize = Number(roomSize);
   const sizeIsValid = Number.isFinite(parsedSize) && parsedSize >= 3 && parsedSize <= 50;
   const nameIsValid = trimmedName.length >= 3 && trimmedName.length <= 50;
+  const renameIsValid = trimmedRename.length >= 3 && trimmedRename.length <= 50;
   const canSubmit = nameIsValid && sizeIsValid && createRoomStatus.status !== "pending";
+  const canRename = renameIsValid && trimmedRename !== identity.name;
 
   const createRoomMessage = useMemo(() => {
     if (createRoomStatus.status !== "error") {
@@ -76,6 +84,10 @@ export function Rooms({
     resetCreateRoomStatus();
   }, [createRoomStatus.status, resetCreateRoomStatus]);
 
+  useEffect(() => {
+    setPendingName(identity.name);
+  }, [identity.name]);
+
   return (
     <div
       className="p-4 min-w-0 shrink-0"
@@ -104,6 +116,38 @@ export function Rooms({
           </div>
         </div>
         <div className="card-body gap-3">
+          <div className="rounded-2xl border border-base-200 bg-base-100 p-4 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <label className="form-control">
+                <div className="label">
+                  <span className="label-text text-xs uppercase tracking-[0.2em] text-base-content/60">Your name</span>
+                  <span className="label-text-alt text-xs text-base-content/50">3-50 chars</span>
+                </div>
+                <input
+                  type="text"
+                  value={pendingName}
+                  onChange={(event) => setPendingName(event.target.value)}
+                  className="input input-sm input-bordered w-full"
+                  placeholder="e.g. Trinity"
+                />
+              </label>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={!canRename}
+                  onClick={() => {
+                    if (!canRename) {
+                      return;
+                    }
+                    renameSelf(trimmedRename);
+                  }}
+                  className="btn btn-primary btn-xs"
+                >
+                  Update name
+                </button>
+              </div>
+            </div>
+          </div>
           {showForm ? (
             <div className="rounded-2xl border border-base-200 bg-base-100 p-4 shadow-sm">
               <div className="flex flex-col gap-3">

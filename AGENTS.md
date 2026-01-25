@@ -88,13 +88,15 @@ This system is an ephemeral chat app with chatrooms. Each WebSocket connection i
 
 - Maintain a mapping `room_id -> room_control` where `room_control` is a handle for contacting a room (at minimum, a room command Subject).
 - Provide room listing for discovery (`[{room_id, name, ...}]`).
-- Create rooms on demand (spawn room process if missing).
+- Create rooms explicitly via `CreateRoom`; joins do not auto-create missing rooms.
 - Return the `room_control` to a connection process.
+- Sweep idle rooms hourly; rooms with `last_sent` older than 24 hours are stopped and removed.
 
 **Notes**
 
 - Connection processes cache `room_control` after resolving a room to avoid repeated lookups.
-- A `RoomHandle` is a typed handle used to send commands to a room
+- A `RoomHandle` is a typed handle used to send commands to a room.
+- Initial rooms are seeded at boot in `backend/src/backend.gleam`.
 
 
 #### Room Process (one per room)

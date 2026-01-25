@@ -33,7 +33,7 @@ export function App({ socket }: AppProps) {
   } | null>(null);
   const hasSentConnect = useRef(false);
   const pendingTimers = useRef<Map<string, number>>(new Map());
-  const identity = useMemo(() => createIdentity(), []);
+  const [identity, setIdentity] = useState<Identity>(() => createIdentity());
 
   const handleListRooms = useCallback((response: Response) => {
     if (response.type === "list_rooms") {
@@ -87,6 +87,19 @@ export function App({ socket }: AppProps) {
   const listRoomsRequest = useWsRequest(socket, handleListRooms);
   useWsRequest(socket, handleRoomEvent);
 
+  const renameSelf = useCallback(
+    (nextName: string) => {
+      const trimmed = nextName.trim();
+      if (!trimmed || trimmed === identity.name) {
+        return;
+      }
+
+      setIdentity((prev) => ({ ...prev, name: trimmed }));
+      connectRequest({ type: "connect", token: identity.token, name: trimmed });
+    },
+    [connectRequest, identity.name, identity.token],
+  );
+
   const handleCreateRoom = useCallback(
     (response: Response) => {
       if (response.type !== "create_room") {
@@ -139,7 +152,7 @@ export function App({ socket }: AppProps) {
     connectRequest({ type: "connect", token: identity.token, name: identity.name });
     hasSentConnect.current = true;
     setIsConnected(true);
-  }, [socket, connectRequest, identity]);
+  }, [socket, connectRequest, identity.name, identity.token]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -283,6 +296,8 @@ export function App({ socket }: AppProps) {
         createRoom={createRoom}
         createRoomStatus={createRoomStatus}
         resetCreateRoomStatus={resetCreateRoomStatus}
+        identity={identity}
+        renameSelf={renameSelf}
       />
     </>
   );

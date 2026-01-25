@@ -46,6 +46,28 @@ pub fn handle_request_connect_sets_user_test() {
   assert reply == response.Success
 }
 
+pub fn handle_request_connect_updates_name_test() {
+  let entry = process.new_subject()
+  let registry = process.new_subject()
+  let state =
+    session.Session(
+      registry: registry,
+      user: chat.User(token: "token", name: "Neo"),
+      inbox: process.new_subject(),
+      rooms: [],
+    )
+
+  let #(next_state, reply) =
+    dispatch.handle_request(
+      entry,
+      state,
+      request.Connect(token: "token", name: "Trinity"),
+    )
+
+  let assert chat.User(token: "token", name: "Trinity") = next_state.user
+  assert reply == response.Success
+}
+
 pub fn handle_requests_collects_replies_test() {
   let entry = process.new_subject()
   let registry = setup_registry(["lobby"])

@@ -55,7 +55,14 @@ fn try_auth(
   connected: fn() -> #(session.Session, response.Response),
 ) -> #(session.Session, response.Response) {
   case state.user {
-    domain_chat.User(_, _) -> connected()
+    domain_chat.User(_, _) ->
+      case req {
+        request.Connect(token:, name:) -> #(
+          session_handler.connect(state, token, name),
+          response.Success,
+        )
+        _ -> connected()
+      }
     domain_chat.Unknown -> {
       case req {
         request.Connect(token:, name:) -> #(
