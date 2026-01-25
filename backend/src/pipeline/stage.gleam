@@ -3,6 +3,7 @@
 import gleam/erlang/process
 import gleam/list
 import gleam/otp/actor
+import logging
 import pipeline/envelope
 
 pub fn forward(
@@ -43,10 +44,13 @@ pub fn try_logs(
   state: state,
   msg: String,
   v: Result(a, b),
-  success: fn(a) -> next,
-) -> next {
+  success: fn(a) -> actor.Next(state, message),
+) -> actor.Next(state, message) {
   case v {
-    Ok(_) -> todo
-    Error(_) -> todo
+    Ok(a) -> success(a)
+    Error(_) -> {
+      logging.log(logging.Warning, msg)
+      actor.continue(state)
+    }
   }
 }

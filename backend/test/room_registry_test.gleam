@@ -94,5 +94,7 @@ pub fn registry_returns_real_room_handles_test() {
   // Use the returned handle to prove it is live.
   let inbox = process.new_subject()
   let assert response.Success =
-    actor.call(command, 50, fn(reply_to) { room.Join(reply_to, inbox) })
+    actor.call(command, 50, fn(reply_to) {
+      room.Join(reply_to, "registry-token", inbox)
+    })
 }

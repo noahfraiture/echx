@@ -55,6 +55,9 @@ pub fn start(
   })
 }
 
+type RoomNext =
+  actor.Next(Room, RoomCommand)
+
 type Room {
   Room(
     name: String,
@@ -74,15 +77,12 @@ type Client {
   )
 }
 
-fn handle_request(
-  state: Room,
-  msg: RoomCommand,
-) -> actor.Next(Room, RoomCommand) {
+fn handle_request(state: Room, msg: RoomCommand) -> RoomNext {
   case msg {
     Join(reply_to:, token:, inbox:) -> {
       use <- bool.lazy_guard(
         state.max_size <= set.size(state.clients),
-        fn() -> actor.Next(Room, RoomCommand) {
+        fn() -> RoomNext {
           actor.send(reply_to, response.JoinRoom(Error("no space left")))
           actor.continue(state)
         },
@@ -94,10 +94,25 @@ fn handle_request(
       actor.continue(Room(..state, clients: set.insert(clients, client)))
     }
     Publish(chat:) -> {
+      // Auth has been enforced at dispatch
       let assert chat.User(token:, name: _) = chat.user
-      use now <- try_slow_mode(state, token)
+      // If the user is not in slow mode, continue, else send him slow mode rejected message
+      // When the user send a message, it's processed in the pipeline and thus he has nothing but a Success
+      // message even if the message is actually not valid
+      // We can later move part of the light logic such as slow mode check in an interceptor stage to have early feedback
+
+      // This function also detect if the user is well registered in the room. If this not the case we can log an error
+      // and nothing else
+      // TODO : we could move that in another function?
+      use now <- try_slow_mode(
+        state,
+        token,
+        fn(inbox: Subject(response.Response), ms: Int) -> RoomNext {
+          actor.send(inbox, response.SlowModeRejected(ms))
+          actor.continue(state)
+        },
+      )
       broadcast(state, chat)
-      echo chat as "publish"
       let clients =
         set.map(state.clients, fn(c: Client) -> Client {
           case c.token == token {
@@ -127,8 +142,9 @@ fn handle_request(
 fn try_slow_mode(
   state: Room,
   sender_token: String,
-  can_send: fn(timestamp.Timestamp) -> actor.Next(Room, RoomCommand),
-) -> actor.Next(Room, RoomCommand) {
+  cannot_send: fn(Subject(response.Response), Int) -> RoomNext,
+  can_send: fn(timestamp.Timestamp) -> RoomNext,
+) -> RoomNext {
   let now = timestamp.system_time()
   // Find actual client
   let sender =
@@ -138,18 +154,13 @@ fn try_slow_mode(
   use sender <- stage.try_logs(state, "", sender)
 
   // Check it's sent long time enough
-  let difference =
-    sender.last_sent
-    |> timestamp.add(state.interval)
-    |> timestamp.difference(now)
+  let next_allowed = timestamp.add(sender.last_sent, state.interval)
+  let difference = timestamp.difference(now, next_allowed)
   let #(s, ns) = duration.to_seconds_and_nanoseconds(difference)
-  let ns = s * 1_000_000 + ns
-  case ns > 0 {
-    True -> can_send(now)
-    False -> {
-      actor.send(sender.inbox, response.SlowModeRejected(ns))
-      actor.continue(state)
-    }
+  let remaining_ms = s * 1000 + ns / 1_000_000
+  case remaining_ms > 0 {
+    True -> cannot_send(sender.inbox, remaining_ms)
+    False -> can_send(now)
   }
 }
 
