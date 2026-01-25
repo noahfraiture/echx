@@ -98,3 +98,40 @@ pub fn registry_returns_real_room_handles_test() {
       room.Join(reply_to, "registry-token", inbox)
     })
 }
+
+pub fn sweep_removes_idle_empty_rooms_test() {
+  let registry = room_registry.new()
+  let assert Ok(_) =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.CreateRoom(reply_to, "idle", 2)
+    })
+  let assert Ok(_) =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.CreateRoom(reply_to, "active", 2)
+    })
+
+  let assert option.Some(room.RoomHandle(command: command, ..)) =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.GetRoom(reply_to, "active")
+    })
+
+  let inbox = process.new_subject()
+  let assert response.Success =
+    actor.call(command, 50, fn(reply_to) {
+      room.Join(reply_to, "active-token", inbox)
+    })
+
+  process.send(registry, room_registry.Sweep)
+
+  let idle =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.GetRoom(reply_to, "idle")
+    })
+  let active =
+    actor.call(registry, 50, fn(reply_to) {
+      room_registry.GetRoom(reply_to, "active")
+    })
+
+  assert idle == option.None
+  let assert option.Some(_) = active
+}

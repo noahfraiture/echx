@@ -30,10 +30,11 @@ pub type RoomCommand {
   Publish(chat: chat.Chat)
   Details(reply_to: Subject(RoomDetail))
   SlowMode(reply_to: Subject(response.Response), interval: duration.Duration)
+  Stop
 }
 
 pub type RoomDetail {
-  RoomDetail(current_size: Int, max_size: Int)
+  RoomDetail(current_size: Int, max_size: Int, last_sent: timestamp.Timestamp)
 }
 
 pub fn start(
@@ -123,11 +124,18 @@ fn handle_request(state: Room, msg: RoomCommand) -> RoomNext {
       actor.continue(Room(..state, msg: [chat, ..state.msg], clients:))
     }
     Details(reply_to:) -> {
+      let last_sent =
+        state.clients
+        |> set.map(fn(c: Client) -> timestamp.Timestamp { c.last_sent })
+        |> set.to_list
+        |> list.max(timestamp.compare)
+        |> result.unwrap(timestamp.unix_epoch)
       actor.send(
         reply_to,
         RoomDetail(
           current_size: set.size(state.clients),
           max_size: state.max_size,
+          last_sent:,
         ),
       )
       actor.continue(state)
@@ -136,6 +144,7 @@ fn handle_request(state: Room, msg: RoomCommand) -> RoomNext {
       actor.send(reply_to, response.Success)
       actor.continue(Room(..state, interval:))
     }
+    Stop -> actor.stop()
   }
 }
 
