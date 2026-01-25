@@ -38,7 +38,7 @@ pub fn join_room_requires_auth_test() {
 
   let #(next_state, replies) =
     dispatch.handle_requests(entry, state, [request.JoinRoom("lobby")])
-  let assert [response.JoinRoom(Error(reason))] = replies
+  let assert [response.Unauthorized(reason)] = replies
   assert reason == "unauthenticated"
   assert next_state.rooms == []
 }

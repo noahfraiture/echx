@@ -10,11 +10,10 @@ describe("integration error cases", () => {
     try {
       client.send({ type: "join_room", room_id: "programming" });
       const response = await client.waitForResponse(
-        (message) => message.type === "join_room",
+        (message) => message.type === "unauthorized",
       );
 
-      assert.equal(response.status, "error");
-      assert.equal(response.reason, "unauthenticated");
+      assert.equal(response.message, "unauthenticated");
     } finally {
       await client.close();
     }

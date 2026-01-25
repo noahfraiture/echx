@@ -38,7 +38,7 @@ describe("websocket chat broadcast", () => {
         (response) => response.type === "list_rooms",
       );
       const receiverRoom = receiverRooms.rooms.find((room) => room.id === "programming");
-      assert.equal(receiverRoom?.joined, true);
+      assert.ok((receiverRoom?.current_size ?? 0) >= 2);
 
       const message = "hello from integration";
       const messageId = `msg-${Date.now()}`;

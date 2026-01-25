@@ -61,7 +61,7 @@ fn try_auth(
           session_handler.connect(state, token, name),
           response.Success,
         )
-        _ -> #(state, response.JoinRoom(Error("unauthenticated")))
+        _ -> #(state, response.Unauthorized("unauthenticated"))
       }
     }
   }

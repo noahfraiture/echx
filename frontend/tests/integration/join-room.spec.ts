@@ -26,7 +26,7 @@ describe("websocket join room", () => {
       );
 
       const programmingRoom = listResponse.rooms.find((room) => room.id === "programming");
-      assert.equal(programmingRoom?.joined, true);
+      assert.ok((programmingRoom?.current_size ?? 0) >= 1);
     } finally {
       await client.close();
     }

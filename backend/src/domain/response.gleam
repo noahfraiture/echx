@@ -6,6 +6,7 @@ import domain/chat
 pub type Response {
   RoomEvent(chat: chat.Chat)
   ErrorMsg(message: String)
+  Unauthorized(message: String)
   ListRooms(rooms: List(RoomSummary))
   JoinRoom(result: Result(Nil, String))
   SlowModeUpdate(interval_ms: Int)

@@ -53,6 +53,11 @@ fn server_message_json(message: response.Response) -> json.Json {
         #("type", json.string("error")),
         #("message", json.string(message)),
       ])
+    response.Unauthorized(message) ->
+      json.object([
+        #("type", json.string("unauthorized")),
+        #("message", json.string(message)),
+      ])
     response.Success ->
       json.object([
         #("type", json.string("success")),

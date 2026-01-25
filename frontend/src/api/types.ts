@@ -25,6 +25,7 @@ export type RoomSummary = {
 export type Response =
   | { type: "room_event"; chat: Chat }
   | { type: "error"; message: string }
+  | { type: "unauthorized"; message: string }
   | { type: "list_rooms"; rooms: RoomSummary[] }
   | { type: "join_room"; status: "ok"; reason: null }
   | { type: "join_room"; status: "error"; reason: string }
