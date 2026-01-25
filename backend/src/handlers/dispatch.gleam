@@ -42,9 +42,6 @@ pub fn handle_request(
       let #(next_state, reply_msg) = rooms.join_room(state, room_id)
       #(next_state, reply_msg)
     }
-    request.SetSlowMode(room_id, interval_ms) -> {
-      todo
-    }
   }
 }
 

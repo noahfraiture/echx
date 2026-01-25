@@ -1,5 +1,6 @@
 //// Room list and join handling.
 
+import domain/chat
 import domain/response
 import domain/session
 import gleam/option
@@ -24,8 +25,9 @@ pub fn join_room(
     "room not found",
   )
 
+  let assert chat.User(token:, name: _) = state.user
   let join_result =
-    actor.call(room_handle.command, 1000, room.Join(_, state.inbox))
+    actor.call(room_handle.command, 1000, room.Join(_, token, state.inbox))
   case join_result {
     response.Success -> {
       let next_state = session.Session(..state, rooms: [room_id, ..state.rooms])

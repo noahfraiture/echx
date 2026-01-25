@@ -38,3 +38,15 @@ pub fn start(
 
   Ok(inbox)
 }
+
+pub fn try_logs(
+  state: state,
+  msg: String,
+  v: Result(a, b),
+  success: fn(a) -> next,
+) -> next {
+  case v {
+    Ok(_) -> todo
+    Error(_) -> todo
+  }
+}

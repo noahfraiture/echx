@@ -62,8 +62,11 @@ fn server_message_json(message: response.Response) -> json.Json {
       json.object([
         #("type", json.string("success")),
       ])
-    response.SlowModeRejected(room_id:, retry_after_ms:) -> todo
-    response.SlowModeUpdate(interval_ms:) -> todo
+    response.SlowModeRejected(retry_after:) ->
+      json.object([
+        #("type", json.string("slow_mode_rejected")),
+        #("message", json.int(retry_after)),
+      ])
   }
 }
 
