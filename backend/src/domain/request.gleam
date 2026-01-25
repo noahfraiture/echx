@@ -6,4 +6,5 @@ pub type Request {
   Connect(token: String, name: String)
   ListRooms
   JoinRoom(room_id: String)
+  CreateRoom(name: String, max_size: Int)
 }

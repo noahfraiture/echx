@@ -2,7 +2,8 @@ export type Request =
   | { type: "chat"; message: string; room_id: string; message_id: string }
   | { type: "connect"; token: string; name: string }
   | { type: "list_rooms" }
-  | { type: "join_room"; room_id: string };
+  | { type: "join_room"; room_id: string }
+  | { type: "create_room"; name: string; max_size: number };
 
 export type ChatUser = {
   name: string | null;
@@ -29,4 +30,6 @@ export type Response =
   | { type: "list_rooms"; rooms: RoomSummary[] }
   | { type: "join_room"; status: "ok"; reason: null }
   | { type: "join_room"; status: "error"; reason: string }
+  | { type: "create_room"; status: "ok"; reason: null }
+  | { type: "create_room"; status: "error"; reason: string }
   | { type: "success" };

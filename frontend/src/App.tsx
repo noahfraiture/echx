@@ -21,6 +21,16 @@ export function App({ socket }: AppProps) {
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set());
   const [messagesByRoom, setMessagesByRoom] = useState<Record<string, ChatMessage[]>>({});
   const [isConnected, setIsConnected] = useState(false);
+  const [createRoomStatus, setCreateRoomStatus] = useState<
+    | { status: "idle" }
+    | { status: "pending" }
+    | { status: "success" }
+    | { status: "error"; message: string }
+  >({ status: "idle" });
+  const [pendingCreateRoom, setPendingCreateRoom] = useState<{
+    name: string;
+    maxSize: number;
+  } | null>(null);
   const hasSentConnect = useRef(false);
   const pendingTimers = useRef<Map<string, number>>(new Map());
   const identity = useMemo(() => createIdentity(), []);
@@ -77,6 +87,50 @@ export function App({ socket }: AppProps) {
   const listRoomsRequest = useWsRequest(socket, handleListRooms);
   useWsRequest(socket, handleRoomEvent);
 
+  const handleCreateRoom = useCallback(
+    (response: Response) => {
+      if (response.type !== "create_room") {
+        return;
+      }
+
+      if (response.status === "ok") {
+        setCreateRoomStatus({ status: "success" });
+        listRoomsRequest({ type: "list_rooms" });
+        return;
+      }
+
+      setCreateRoomStatus({ status: "error", message: response.reason });
+      setPendingCreateRoom(null);
+    },
+    [listRoomsRequest],
+  );
+
+  useWsRequest(socket, handleCreateRoom);
+
+  const joinRoomRequest = useWsRequest(socket, undefined); // TODO : add callback
+  const joinRoom = useCallback(
+    (roomID: RoomSummary["id"]) => {
+      const request: Request = { type: "join_room", room_id: roomID };
+      joinRoomRequest(request);
+      setRoomID(roomID);
+      setJoinedRooms((prev) => new Set(prev).add(roomID));
+      setRooms((prev) => {
+        const existing = prev.find((room) => room.id === roomID);
+        if (!existing) {
+          return prev;
+        }
+        return prev.map((room) => {
+          if (room.id !== roomID) {
+            return room;
+          }
+          const currentSize = typeof room.current_size === "number" ? room.current_size : 0;
+          return { ...room, current_size: currentSize + 1, joined: true };
+        });
+      });
+    },
+    [joinRoomRequest],
+  );
+
   useEffect(() => {
     if (!socket || hasSentConnect.current) {
       return;
@@ -94,6 +148,15 @@ export function App({ socket }: AppProps) {
 
     listRoomsRequest({ type: "list_rooms" });
   }, [isConnected, listRoomsRequest]);
+
+  useEffect(() => {
+    if (!pendingCreateRoom || createRoomStatus.status !== "success") {
+      return;
+    }
+
+    joinRoom(pendingCreateRoom.name);
+    setPendingCreateRoom(null);
+  }, [createRoomStatus.status, joinRoom, pendingCreateRoom]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -192,21 +255,16 @@ export function App({ socket }: AppProps) {
     sendMessageRequest(chatRequest);
   };
 
-  const joinRoomRequest = useWsRequest(socket, undefined); // TODO : add callback
-  const joinRoom = (roomID: RoomSummary["id"]) => {
-    const request: Request = { type: "join_room", room_id: roomID };
-    joinRoomRequest(request);
-    setRoomID(roomID);
-    setJoinedRooms((prev) => new Set(prev).add(roomID));
-    setRooms((prev) =>
-      prev.map((room) => {
-        if (room.id !== roomID) {
-          return room;
-        }
-        const currentSize = typeof room.current_size === "number" ? room.current_size : 0;
-        return { ...room, current_size: currentSize + 1, joined: true };
-      }),
-    );
+  const createRoomRequest = useWsRequest(socket, undefined);
+  const createRoom = (name: string, maxSize: number) => {
+    setCreateRoomStatus({ status: "pending" });
+    setPendingCreateRoom({ name, maxSize });
+    const request: Request = { type: "create_room", name, max_size: maxSize };
+    createRoomRequest(request);
+  };
+
+  const resetCreateRoomStatus = () => {
+    setCreateRoomStatus({ status: "idle" });
   };
 
   if (!isConnected) {
@@ -216,7 +274,16 @@ export function App({ socket }: AppProps) {
   return (
     <>
       {roomID ? <ChatPanel messages={messagesByRoom[roomID] ?? []} onMessageSent={onMessageSent} /> : <EmptyChat />}
-      <Rooms roomID={roomID} rooms={rooms} joinedRooms={joinedRooms} setRoomID={setRoomID} joinRoom={joinRoom} />
+      <Rooms
+        roomID={roomID}
+        rooms={rooms}
+        joinedRooms={joinedRooms}
+        setRoomID={setRoomID}
+        joinRoom={joinRoom}
+        createRoom={createRoom}
+        createRoomStatus={createRoomStatus}
+        resetCreateRoomStatus={resetCreateRoomStatus}
+      />
     </>
   );
 }

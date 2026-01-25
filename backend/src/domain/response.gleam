@@ -9,6 +9,7 @@ pub type Response {
   Unauthorized(message: String)
   ListRooms(rooms: List(RoomSummary))
   JoinRoom(result: Result(Nil, String))
+  CreateRoom(result: Result(Nil, String))
   SlowModeRejected(retry_after: Int)
   Success
 }

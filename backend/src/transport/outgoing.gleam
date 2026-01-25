@@ -48,6 +48,21 @@ fn server_message_json(message: response.Response) -> json.Json {
             #("reason", json.string(reason)),
           ])
       }
+    response.CreateRoom(result) ->
+      case result {
+        Ok(_) ->
+          json.object([
+            #("type", json.string("create_room")),
+            #("status", json.string("ok")),
+            #("reason", json.null()),
+          ])
+        Error(reason) ->
+          json.object([
+            #("type", json.string("create_room")),
+            #("status", json.string("error")),
+            #("reason", json.string(reason)),
+          ])
+      }
     response.ErrorMsg(message) ->
       json.object([
         #("type", json.string("error")),

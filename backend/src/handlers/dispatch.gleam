@@ -42,6 +42,10 @@ pub fn handle_request(
       let #(next_state, reply_msg) = rooms.join_room(state, room_id)
       #(next_state, reply_msg)
     }
+    request.CreateRoom(name, max_size) -> {
+      let #(next_state, reply_msg) = rooms.create_room(state, name, max_size)
+      #(next_state, reply_msg)
+    }
   }
 }
 

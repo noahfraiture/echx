@@ -36,6 +36,11 @@ fn client_message_decoder() -> decode.Decoder(request.Request) {
         use room_id <- decode.field("room_id", decode.string)
         decode.success(request.JoinRoom(room_id))
       }
+      "create_room" -> {
+        use name <- decode.field("name", decode.string)
+        use max_size <- decode.field("max_size", decode.int)
+        decode.success(request.CreateRoom(name, max_size))
+      }
       _ -> decode.failure(request.Chat("", "", ""), expected: "client message")
     }
   }

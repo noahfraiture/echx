@@ -2,7 +2,7 @@
 
 import domain/response
 import gleam/dict.{type Dict}
-import gleam/erlang/process.{type Subject, new_subject, send_after}
+import gleam/erlang/process.{type Subject}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/order
@@ -118,8 +118,7 @@ fn handle_sweep(
     |> dict.values
     |> list.filter(fn(handle: room.RoomHandle) {
       let details = actor.call(handle.command, 1000, room.Details)
-      details.current_size == 0
-      && timestamp.compare(details.last_sent, cutoff) == order.Lt
+      timestamp.compare(details.last_sent, cutoff) == order.Lt
     })
 
   stale
@@ -137,6 +136,6 @@ fn handle_sweep(
 }
 
 fn schedule_sweep(registry: Subject(RoomRegistryMsg)) {
-  send_after(registry, 3_600_000, Sweep)
+  process.send_after(registry, 3_600_000, Sweep)
   Nil
 }

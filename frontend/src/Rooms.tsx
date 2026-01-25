@@ -1,4 +1,11 @@
+import { useEffect, useMemo, useState } from "react";
 import type { RoomSummary } from "./api/types";
+
+type CreateRoomStatus =
+  | { status: "idle" }
+  | { status: "pending" }
+  | { status: "success" }
+  | { status: "error"; message: string };
 
 type RoomsProps = {
   roomID: RoomSummary["id"] | null;
@@ -6,6 +13,9 @@ type RoomsProps = {
   joinedRooms: Set<RoomSummary["id"]>;
   setRoomID: (roomID: RoomSummary["id"]) => void;
   joinRoom: (roomID: RoomSummary["id"]) => void;
+  createRoom: (name: string, maxSize: number) => void;
+  createRoomStatus: CreateRoomStatus;
+  resetCreateRoomStatus: () => void;
 };
 
 export function formatRoomSize(room: RoomSummary): string | null {
@@ -16,20 +26,151 @@ export function formatRoomSize(room: RoomSummary): string | null {
   return `${room.current_size}/${room.max_size}`;
 }
 
-export function Rooms({ roomID, rooms, joinedRooms, setRoomID, joinRoom }: RoomsProps) {
+export function Rooms({
+  roomID,
+  rooms,
+  joinedRooms,
+  setRoomID,
+  joinRoom,
+  createRoom,
+  createRoomStatus,
+  resetCreateRoomStatus,
+}: RoomsProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [roomName, setRoomName] = useState("");
+  const [roomSize, setRoomSize] = useState("12");
+
+  const trimmedName = roomName.trim();
+  const parsedSize = Number(roomSize);
+  const sizeIsValid = Number.isFinite(parsedSize) && parsedSize >= 3 && parsedSize <= 50;
+  const nameIsValid = trimmedName.length >= 3 && trimmedName.length <= 50;
+  const canSubmit = nameIsValid && sizeIsValid && createRoomStatus.status !== "pending";
+
+  const createRoomMessage = useMemo(() => {
+    if (createRoomStatus.status !== "error") {
+      return "";
+    }
+    return createRoomStatus.message;
+  }, [createRoomStatus.status]);
+
+  const maxRoomNameLength = useMemo(() => {
+    if (rooms.length === 0) {
+      return 12;
+    }
+
+    const longest = Math.max(...rooms.map((room) => room.name.length));
+    return Math.min(20, Math.max(12, longest));
+  }, [rooms]);
+
+  const panelWidth = `calc(${maxRoomNameLength}ch + 18rem)`;
+  const minPanelWidth = "calc(12ch + 18rem)";
+  const maxPanelWidth = "calc(20ch + 18rem)";
+
+  useEffect(() => {
+    if (createRoomStatus.status !== "success") {
+      return;
+    }
+    setShowForm(false);
+    setRoomName("");
+    setRoomSize("12");
+    resetCreateRoomStatus();
+  }, [createRoomStatus.status, resetCreateRoomStatus]);
+
   return (
-    <div className="w-72 p-4">
+    <div
+      className="p-4 min-w-0 shrink-0"
+      style={{ width: panelWidth, minWidth: minPanelWidth, maxWidth: maxPanelWidth }}
+    >
       <div className="h-full w-full card overflow-hidden border border-base-300 bg-base-100 shadow-lg">
         <div className="bg-linear-to-r from-base-200 via-base-100 to-base-200 px-5 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-base-content/60">Rooms</p>
               <h2 className="text-lg font-semibold text-base-content">Where to?</h2>
             </div>
-            <span className="badge badge-outline badge-sm">{rooms.length}</span>
+            <div className="flex items-center gap-2">
+              <span className="badge badge-outline badge-sm">{rooms.length}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm((prev) => !prev);
+                  resetCreateRoomStatus();
+                }}
+                className="btn btn-xs btn-primary rounded-full"
+              >
+                New
+              </button>
+            </div>
           </div>
         </div>
         <div className="card-body gap-3">
+          {showForm ? (
+            <div className="rounded-2xl border border-base-200 bg-base-100 p-4 shadow-sm">
+              <div className="flex flex-col gap-3">
+                <label className="form-control">
+                  <div className="label">
+                    <span className="label-text text-xs uppercase tracking-[0.2em] text-base-content/60">
+                      Room name
+                    </span>
+                    <span className="label-text-alt text-xs text-base-content/50">3-50 chars</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={roomName}
+                    onChange={(event) => setRoomName(event.target.value)}
+                    className="input input-sm input-bordered w-full"
+                    placeholder="e.g. Coffee chat"
+                  />
+                </label>
+                <label className="form-control">
+                  <div className="label">
+                    <span className="label-text text-xs uppercase tracking-[0.2em] text-base-content/60">
+                      Max size
+                    </span>
+                    <span className="label-text-alt text-xs text-base-content/50">3-50</span>
+                  </div>
+                  <input
+                    type="number"
+                    min={3}
+                    max={50}
+                    value={roomSize}
+                    onChange={(event) => setRoomSize(event.target.value)}
+                    className="input input-sm input-bordered w-full"
+                  />
+                </label>
+                {createRoomStatus.status === "error" ? (
+                  <div className="alert alert-error rounded-2xl px-3 py-2 text-xs">
+                    {createRoomMessage}
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false);
+                      resetCreateRoomStatus();
+                    }}
+                    className="btn btn-ghost btn-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canSubmit}
+                    onClick={() => {
+                      if (!canSubmit) {
+                        return;
+                      }
+                      createRoom(trimmedName, parsedSize);
+                    }}
+                    className="btn btn-primary btn-xs"
+                  >
+                    {createRoomStatus.status === "pending" ? "Creating..." : "Create room"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
           <div className="flex flex-col gap-2">
             {rooms.map((room) => {
               const isActive = room.id === roomID;

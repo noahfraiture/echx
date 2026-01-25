@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Chat } from "./api/types";
 
 type MessageStatus = "pending" | "confirmed" | "error";
@@ -15,12 +15,20 @@ type ChatPanelProps = {
 
 export function ChatPanel({ messages, onMessageSent }: ChatPanelProps) {
   const [draft, setDraft] = useState("");
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages]);
 
   return (
     <div className="flex-1 min-w-0 p-4">
       <div className="h-full w-full p-4 flex flex-col">
         <h2 className="text-lg font-semibold">Chat</h2>
-        <div className="space-y-3 overflow-y-auto flex-1">
+        <div className="space-y-3 overflow-y-auto flex-1" ref={scrollRef}>
           {messages.map((message) => {
             const bubbleClass =
               message.status === "pending"

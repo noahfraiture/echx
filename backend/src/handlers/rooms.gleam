@@ -5,6 +5,7 @@ import domain/response
 import domain/session
 import gleam/option
 import gleam/otp/actor
+import gleam/string
 import pipeline/room
 import room_registry
 
@@ -34,6 +35,40 @@ pub fn join_room(
       #(next_state, response.JoinRoom(Ok(Nil)))
     }
     other -> #(state, other)
+  }
+}
+
+pub fn create_room(
+  state: session.Session,
+  name: String,
+  max_size: Int,
+) -> #(session.Session, response.Response) {
+  case validate_room(name, max_size) {
+    Error(message) -> #(state, response.CreateRoom(Error(message)))
+    Ok(normalized_name) -> {
+      let result =
+        room_registry.new_room(state.registry, normalized_name, max_size)
+      case result {
+        Ok(_) -> #(state, response.CreateRoom(Ok(Nil)))
+        Error(_) -> #(
+          state,
+          response.CreateRoom(Error("unable to create room")),
+        )
+      }
+    }
+  }
+}
+
+fn validate_room(name: String, max_size: Int) -> Result(String, String) {
+  let trimmed = string.trim(name)
+  let name_length = string.length(trimmed)
+  case name_length < 3 || name_length > 50 {
+    True -> Error("name must be between 3 and 50 characters")
+    False ->
+      case max_size < 3 || max_size > 50 {
+        True -> Error("max size must be between 3 and 50")
+        False -> Ok(trimmed)
+      }
   }
 }
 
