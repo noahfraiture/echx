@@ -3,6 +3,8 @@
 import domain/chat
 import domain/response
 import domain/session
+import gleam/bool
+import gleam/list
 import gleam/option
 import gleam/otp/actor
 import gleam/string
@@ -45,14 +47,14 @@ pub fn create_room(
 ) -> #(session.Session, response.Response) {
   case validate_room(name, max_size) {
     Error(message) -> #(state, response.CreateRoom(Error(message)))
-    Ok(normalized_name) -> {
+    Ok(trimmed_name) -> {
       let result =
-        room_registry.new_room(state.registry, normalized_name, max_size)
+        room_registry.new_room(state.registry, trimmed_name, max_size)
       case result {
         Ok(_) -> #(state, response.CreateRoom(Ok(Nil)))
-        Error(_) -> #(
+        Error(error) -> #(
           state,
-          response.CreateRoom(Error("unable to create room")),
+          response.CreateRoom(Error(room_registry.error_message(error))),
         )
       }
     }
@@ -62,14 +64,34 @@ pub fn create_room(
 fn validate_room(name: String, max_size: Int) -> Result(String, String) {
   let trimmed = string.trim(name)
   let name_length = string.length(trimmed)
-  case name_length < 3 || name_length > 50 {
-    True -> Error("name must be between 3 and 50 characters")
-    False ->
-      case max_size < 3 || max_size > 50 {
-        True -> Error("max size must be between 3 and 50")
-        False -> Ok(trimmed)
-      }
-  }
+  use <- bool.guard(
+    name_length < 3 || name_length > 50,
+    Error("name must be between 3 and 50 characters"),
+  )
+  use <- bool.guard(
+    max_size < 3 || max_size > 50,
+    Error("max size must be between 3 and 50"),
+  )
+  use <- bool.guard(
+    !has_only_name_chars(trimmed),
+    Error("name may only include letters, numbers, and spaces"),
+  )
+  Ok(trimmed)
+}
+
+fn has_only_name_chars(name: String) -> Bool {
+  name
+  |> string.to_utf_codepoints
+  |> list.all(satisfying: fn(codepoint) {
+    let value = string.utf_codepoint_to_int(codepoint)
+    value >= 48
+    && value <= 57
+    || value >= 65
+    && value <= 90
+    || value >= 97
+    && value <= 122
+    || value == 32
+  })
 }
 
 fn try(

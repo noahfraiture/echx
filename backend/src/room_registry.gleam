@@ -22,8 +22,17 @@ type RoomRegistry {
 pub type RoomRegistryMsg {
   ListRooms(reply_to: Subject(List(response.RoomSummary)))
   GetRoom(reply_to: Subject(Option(room.RoomHandle)), id: String)
-  CreateRoom(reply_to: Subject(Result(Nil, Nil)), name: String, max_user: Int)
+  CreateRoom(
+    reply_to: Subject(Result(Nil, CreateRoomError)),
+    name: String,
+    max_user: Int,
+  )
   Sweep
+}
+
+pub type CreateRoomError {
+  DuplicateName
+  StartFailed
 }
 
 fn handle(
@@ -59,16 +68,20 @@ fn handle(
 
 fn handle_create_room(
   state: RoomRegistry,
-  reply_to: Subject(Result(Nil, Nil)),
+  reply_to: Subject(Result(Nil, CreateRoomError)),
   name: String,
   max_user: Int,
   rooms: Dict(String, room.RoomHandle),
 ) {
   case dict.has_key(state.rooms, name) {
+    True -> {
+      actor.send(reply_to, Error(DuplicateName))
+      actor.continue(state)
+    }
     False -> {
       case room.start(name, max_user) {
         Error(_) -> {
-          actor.send(reply_to, Error(Nil))
+          actor.send(reply_to, Error(StartFailed))
           actor.continue(state)
         }
         Ok(handle) -> {
@@ -80,10 +93,6 @@ fn handle_create_room(
         }
       }
     }
-    True -> {
-      actor.send(reply_to, Ok(Nil))
-      actor.continue(state)
-    }
   }
 }
 
@@ -91,8 +100,15 @@ pub fn new_room(
   registry: Subject(RoomRegistryMsg),
   name: String,
   max_user: Int,
-) -> Result(Nil, Nil) {
+) -> Result(Nil, CreateRoomError) {
   actor.call(registry, 1000, CreateRoom(_, name, max_user))
+}
+
+pub fn error_message(error: CreateRoomError) -> String {
+  case error {
+    DuplicateName -> "room already exists"
+    StartFailed -> "unable to create room"
+  }
 }
 
 pub fn new() -> Subject(RoomRegistryMsg) {

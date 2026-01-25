@@ -63,3 +63,32 @@ pub fn join_room_success_updates_state_test() {
       room_registry.GetRoom(reply_to, "lobby")
     })
 }
+
+pub fn create_room_rejects_invalid_names_test() {
+  let state =
+    session.Session(
+      registry: room_registry.new(),
+      user: chat.User(token: "token", name: "Neo"),
+      inbox: process.new_subject(),
+      rooms: [],
+    )
+
+  let #(_, reply) = rooms_handler.create_room(state, "@@@", 4)
+  let assert response.CreateRoom(Error(reason)) = reply
+  assert reason == "name may only include letters, numbers, and spaces"
+}
+
+pub fn create_room_rejects_duplicate_names_test() {
+  let registry = setup_registry(["lobby"])
+  let state =
+    session.Session(
+      registry: registry,
+      user: chat.User(token: "token", name: "Neo"),
+      inbox: process.new_subject(),
+      rooms: [],
+    )
+
+  let #(_, reply) = rooms_handler.create_room(state, "lobby", 4)
+  let assert response.CreateRoom(Error(reason)) = reply
+  assert reason == "room already exists"
+}

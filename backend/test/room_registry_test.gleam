@@ -55,13 +55,13 @@ pub fn rooms_can_be_added_and_retrieved_test() {
     })
 }
 
-pub fn creating_a_room_twice_is_idempotent_test() {
+pub fn creating_a_room_twice_returns_duplicate_error_test() {
   let registry = room_registry.new()
   let assert Ok(_) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.CreateRoom(reply_to, "alpha", 2)
     })
-  let assert Ok(_) =
+  let assert Error(room_registry.DuplicateName) =
     actor.call(registry, 50, fn(reply_to) {
       room_registry.CreateRoom(reply_to, "alpha", 2)
     })
