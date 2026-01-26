@@ -49,7 +49,7 @@ pub fn new(
       }
     }
     |> mist.new
-    |> mist.bind("localhost")
+    |> mist.bind("0.0.0.0")
     |> mist.with_ipv6
     |> mist.port(8080)
     |> mist.start

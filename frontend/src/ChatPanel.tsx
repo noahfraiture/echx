@@ -6,6 +6,7 @@ type MessageStatus = "pending" | "confirmed" | "error";
 export type ChatMessage = {
   chat: Chat;
   status: MessageStatus;
+  isSelf: boolean;
 };
 
 type ChatPanelProps = {
@@ -30,15 +31,18 @@ export function ChatPanel({ messages, onMessageSent }: ChatPanelProps) {
         <h2 className="text-lg font-semibold">Chat</h2>
         <div className="space-y-3 overflow-y-auto flex-1" ref={scrollRef}>
           {messages.map((message) => {
-            const bubbleClass =
-              message.status === "pending"
-                ? "chat-bubble opacity-60"
-                : message.status === "error"
-                  ? "chat-bubble border border-error"
-                  : "chat-bubble";
+            const bubbleClass = [
+              "chat-bubble",
+              message.isSelf ? "chat-bubble-primary text-primary-content" : "",
+              message.status === "pending" ? "opacity-60" : "",
+              message.status === "error" ? "border border-error" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const alignmentClass = message.isSelf ? "chat chat-end" : "chat chat-start";
 
             return (
-              <div className="chat chat-start" key={message.chat.message_id}>
+              <div className={alignmentClass} key={message.chat.message_id}>
                 <div className="chat-header">
                   {message.chat.user.name ?? "Anonymous"}
                   <time className="text-xs opacity-50">2 hours ago</time>

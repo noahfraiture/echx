@@ -1,7 +1,7 @@
 import { ChatPanel, type ChatMessage } from "./ChatPanel";
 import { EmptyChat } from "./EmptyChat";
 import { Rooms } from "./Rooms";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Chat, type Response, type RoomSummary } from "./api/types";
 import { useWsRequest } from "./hooks/useWsRequest";
 import { type Request } from "./api/types";
@@ -67,16 +67,17 @@ export function App({ socket }: AppProps) {
       setMessagesByRoom((prev) => {
         const existing = prev[roomID] ?? [];
         const matchIndex = existing.findIndex((message) => message.chat.message_id === messageId);
+        const isSelf = response.chat.user.name === identity.name;
 
         if (matchIndex >= 0) {
           const nextMessages = [...existing];
-          nextMessages[matchIndex] = { chat: response.chat, status: "confirmed" };
+          nextMessages[matchIndex] = { chat: response.chat, status: "confirmed", isSelf };
           return { ...prev, [roomID]: nextMessages };
         }
 
         return {
           ...prev,
-          [roomID]: [...existing, { chat: response.chat, status: "confirmed" }],
+          [roomID]: [...existing, { chat: response.chat, status: "confirmed", isSelf }],
         };
       });
     },
@@ -230,7 +231,7 @@ export function App({ socket }: AppProps) {
 
     const messageId = createMessageId();
     const chat: Chat = { content, user: { name: identity.name }, message_id: messageId };
-    const pendingMessage: ChatMessage = { chat, status: "pending" };
+    const pendingMessage: ChatMessage = { chat, status: "pending", isSelf: true };
 
     setMessagesByRoom((prev) => ({
       ...prev,
