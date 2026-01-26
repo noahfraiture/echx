@@ -10,8 +10,7 @@ RUN corepack enable \
 
 COPY . .
 
-ARG VITE_WS_URL
-ENV VITE_WS_URL=${VITE_WS_URL}
+ENV VITE_WS_URL=wss://api.echx.app/ws
 
 RUN pnpm build
 
