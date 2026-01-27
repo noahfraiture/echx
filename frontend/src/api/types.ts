@@ -7,6 +7,7 @@ export type Request =
 
 export type ChatUser = {
   name: string | null;
+  token: string | null;
 };
 
 export type Chat = {

@@ -99,6 +99,10 @@ fn chat_json(chat: chat.Chat) -> json.Json {
           chat.Unknown -> json.null()
           chat.User(token: _, name:) -> json.string(name)
         }),
+        #("token", case chat.user {
+          chat.Unknown -> json.null()
+          chat.User(token:, name: _) -> json.string(token)
+        }),
       ]),
     ),
     #(
