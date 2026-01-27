@@ -67,7 +67,9 @@ export function App({ socket }: AppProps) {
       setMessagesByRoom((prev) => {
         const existing = prev[roomID] ?? [];
         const matchIndex = existing.findIndex((message) => message.chat.message_id === messageId);
-        const isSelf = response.chat.user.name === identity.name;
+        const isSelf =
+          response.chat.user.token === identity.token ||
+          (response.chat.user.token == null && response.chat.user.name === identity.name);
 
         if (matchIndex >= 0) {
           const nextMessages = [...existing];
@@ -81,7 +83,7 @@ export function App({ socket }: AppProps) {
         };
       });
     },
-    [roomID],
+    [identity.name, identity.token, roomID],
   );
 
   const connectRequest = useWsRequest(socket, handleConnectResponse);
@@ -230,7 +232,11 @@ export function App({ socket }: AppProps) {
     }
 
     const messageId = createMessageId();
-    const chat: Chat = { content, user: { name: identity.name }, message_id: messageId };
+    const chat: Chat = {
+      content,
+      user: { name: identity.name, token: identity.token },
+      message_id: messageId,
+    };
     const pendingMessage: ChatMessage = { chat, status: "pending", isSelf: true };
 
     setMessagesByRoom((prev) => ({
