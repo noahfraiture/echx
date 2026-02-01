@@ -236,6 +236,10 @@ export function App({ socket }: AppProps) {
       content,
       user: { name: identity.name, token: identity.token },
       message_id: messageId,
+      timestamp: {
+        seconds: 0,
+        nanoseconds: 0,
+      },
     };
     const pendingMessage: ChatMessage = { chat, status: "pending", isSelf: true };
 
