@@ -14,6 +14,12 @@ export type Chat = {
   content: string;
   user: ChatUser;
   message_id: string;
+  timestamp: Timestamp;
+};
+
+export type Timestamp = {
+  seconds: number;
+  nanoseconds: number;
 };
 
 export type RoomSummary = {

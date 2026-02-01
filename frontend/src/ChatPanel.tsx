@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { Chat } from "./api/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Chat, Timestamp } from "./api/types";
 
 type MessageStatus = "pending" | "confirmed" | "error";
 
@@ -25,6 +25,18 @@ export function ChatPanel({ messages, onMessageSent }: ChatPanelProps) {
     });
   }, [messages]);
 
+  const timeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      }),
+    [],
+  );
+
   return (
     <div className="flex-1 min-w-0 p-4">
       <div className="h-full w-full p-4 flex flex-col">
@@ -45,7 +57,14 @@ export function ChatPanel({ messages, onMessageSent }: ChatPanelProps) {
               <div className={alignmentClass} key={message.chat.message_id}>
                 <div className="chat-header">
                   {message.chat.user.name ?? "Anonymous"}
-                  <time className="text-xs opacity-50">2 hours ago</time>
+                  <time
+                    className="text-xs opacity-50"
+                    dateTime={message.status === "confirmed" ? formatTimestamp(message.chat.timestamp) : undefined}
+                  >
+                    {message.status === "confirmed"
+                      ? formatMessageTime(message.chat.timestamp, timeFormatter)
+                      : "Sending..."}
+                  </time>
                 </div>
                 <div className={bubbleClass}>{message.chat.content}</div>
                 {message.status === "error" ? (
@@ -74,4 +93,17 @@ export function ChatPanel({ messages, onMessageSent }: ChatPanelProps) {
       </div>
     </div>
   );
+}
+
+function formatMessageTime(timestamp: Timestamp, formatter: Intl.DateTimeFormat): string {
+  return formatter.format(timestampToDate(timestamp));
+}
+
+function formatTimestamp(timestamp: Timestamp): string {
+  return timestampToDate(timestamp).toISOString();
+}
+
+function timestampToDate(timestamp: Timestamp): Date {
+  const milliseconds = timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1_000_000);
+  return new Date(milliseconds);
 }
